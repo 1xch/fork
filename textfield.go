@@ -1,6 +1,10 @@
 package fork
 
-import "fmt"
+import (
+	"fmt"
+	"net/http"
+	"strings"
+)
 
 var textwidget Widget = NewDefaultWidget(`<input type="text" name="{{ .Name }}" value="{{ .Get }}">`)
 
@@ -23,7 +27,10 @@ func (t *textfield) New() Field {
 	return &newfield
 }
 
-func (t *textfield) Name() string {
+func (t *textfield) Name(name ...string) string {
+	if len(name) > 0 {
+		t.name = strings.Join(name, "-")
+	}
 	return t.name
 }
 
@@ -31,8 +38,9 @@ func (t *textfield) Get() *Value {
 	return t.data
 }
 
-func (t *textfield) Set(i interface{}) {
-	t.data = NewValue(i)
+func (t *textfield) Set(r *http.Request) {
+	val := r.FormValue(t.Name())
+	t.data = NewValue(val)
 }
 
 func TextAreaWidget(rows, cols int) Widget {

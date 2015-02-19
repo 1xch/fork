@@ -1,21 +1,37 @@
 package fork
 
-import "strconv"
+import (
+	"net/http"
+	"strconv"
+	"strings"
+)
 
-var booleanwidget Widget = NewDefaultWidget(`<input type="checkbox" name="{{.Name}}"{{if .Get.Raw}} checked{{end}}>`)
+var booleanwidget Widget = NewDefaultWidget(`<input type="checkbox" name="{{ .Name }}"{{ if .Get.Raw.Set }} checked{{ end }}>{{ .Get.Raw.Label }}`)
 
-func BooleanField(name string) *booleanfield {
+func BooleanField(name string, label string, start bool) *booleanfield {
 	return &booleanfield{
 		name:      name,
-		checked:   NewValue(false),
+		label:     label,
+		data:      NewValue(boolinfo(name, label, start)),
 		processor: DefaultProcessor(booleanwidget),
 	}
 }
 
 type booleanfield struct {
-	name    string
-	checked *Value
+	name  string
+	label string
+	data  *Value
 	*processor
+}
+
+type BoolInfo struct {
+	Name  string
+	Label string
+	Set   bool
+}
+
+func boolinfo(name string, label string, value bool) *BoolInfo {
+	return &BoolInfo{name, label, value}
 }
 
 func (b *booleanfield) New() Field {
@@ -23,18 +39,22 @@ func (b *booleanfield) New() Field {
 	return &newfield
 }
 
-func (b *booleanfield) Name() string {
+func (b *booleanfield) Name(name ...string) string {
+	if len(name) > 0 {
+		b.name = strings.Join(name, "-")
+	}
 	return b.name
 }
 
 func (b *booleanfield) Get() *Value {
-	return b.checked
+	return b.data
 }
 
-func (b *booleanfield) Set(i interface{}) {
-	set, err := strconv.ParseBool(i.(string))
+func (b *booleanfield) Set(req *http.Request) {
+	val := req.FormValue(b.Name())
+	set, err := strconv.ParseBool(val)
 	if err != nil {
-		b.checked = NewValue(false)
+		set = false //b.data = NewValue(boolinfo(b.name, b.label, false))
 	}
-	b.checked = NewValue(set)
+	b.data = NewValue(boolinfo(b.name, b.label, set))
 }

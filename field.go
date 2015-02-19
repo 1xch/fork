@@ -1,13 +1,15 @@
 package fork
 
+import "net/http"
+
 type Field interface {
 	New() Field
 	Fielder
 }
 
 type Fielder interface {
-	Name() string
+	Name(...string) string
 	Get() *Value
-	Set(i interface{})
+	Set(r *http.Request)
 	Processor
 }
