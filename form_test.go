@@ -151,7 +151,33 @@ func TestPostForm(t *testing.T) {
 	ts.handlers["POST"] = testformpost
 	req, _ := http.NewRequest("POST", "/", nil)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	//v, _ := url.ParseQuery(`testtext=TESTTEXT1&email=test@test.com&testboolyes=false&testboolno=true&invisible=unseen&textareatest='4scoreN7yearsago'&listfield-0-zero='Iam0'&listfield-1-one='Iam1'&formfield-0-formfieldtext-0=textinaformfieldtextfield&formfield-0-formfieldbool-1=false`)
+	v, _ := url.ParseQuery(`testtext=TESTTEXT1&email=test@test.com&testboolyes=false&testboolno=true&invisible=unseen&textareatest='4scoreN7yearsago'&listfield-0-zero='Iam0'&listfield-1-one='Iam1'&formfield-0-formfieldtext-0=textinaformfieldtextfield&formfield-0-formfieldbool-1=false`)
+	//fmt.Printf("%+v\n", v)
+	req.PostForm = v
+	w := httptest.NewRecorder()
+	ts.ServeHTTP(w, req)
+	fmt.Printf("%+v\n\n\n", w.Body)
+}
+
+func TestPostListField(t *testing.T) {
+	ts := testserve()
+	ts.handlers["POST"] = testformpost
+	req, _ := http.NewRequest("POST", "/", nil)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	v, _ := url.ParseQuery(`listfield-0-zero='Iam0'&listfield-1-one='Iam1'`)
+	//fmt.Printf("%+v\n", v)
+	req.PostForm = v
+	w := httptest.NewRecorder()
+	ts.ServeHTTP(w, req)
+	fmt.Printf("%+v\n\n\n", w.Body)
+
+}
+
+func TestPostFormFields(t *testing.T) {
+	ts := testserve()
+	ts.handlers["POST"] = testformpost
+	req, _ := http.NewRequest("POST", "/", nil)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	v, _ := url.ParseQuery(`formfield-0-formfieldtext-0=FORMFIELD0textfield&formfield-0-formfieldbool-1=true&formfield-1-formfieldtext-0=formfield1text&formfield-1-formfieldbool-1=false`)
 	//fmt.Printf("%+v\n", v)
 	req.PostForm = v
