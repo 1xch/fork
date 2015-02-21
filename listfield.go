@@ -10,37 +10,41 @@ import (
 
 func listfieldswidget(name string) Widget {
 	lfw := fmt.Sprintf(`<fieldset name="%s"><ul>{{ range $x := .Get.Raw }}<li>{{ .Render $x }}</li>{{ end }}</ul></fieldset>`, name)
-	return NewDefaultWidget(lfw)
+	return NewWidget(lfw)
 }
 
-type NewFieldFunc func(string, *http.Request) Field
+func renamefield(name string, number int, field Field) Field {
+	field.Name(name, strconv.Itoa(number), field.Name())
+	return field
+}
 
-func renamefields(name string, fields []Field) []Field {
-	for index, field := range fields {
-		field.Name(name, strconv.Itoa(index), field.Name())
+func renamefields(name string, number int, field Field) []Field {
+	var ret []Field
+	for i := 0; i < number; i++ {
+		fd := field.New()
+		renamefield(name, i, fd)
+		ret = append(ret, fd)
 	}
-	return fields
+	return ret
 }
 
 func getregexp(name string) *regexp.Regexp {
 	return regexp.MustCompile(fmt.Sprintf("^%s-", name))
 }
 
-func ListField(name string, newfield NewFieldFunc, startingfield ...Field) *listfield {
+func ListField(name string, startwith int, start Field) Field {
 	return &listfield{
 		name:      name,
-		newfield:  newfield,
-		match:     getregexp(name),
-		fields:    renamefields(name, startingfield),
-		processor: DefaultProcessor(listfieldswidget(name)),
+		base:      start,
+		fields:    renamefields(name, startwith, start),
+		processor: NewProcessor(listfieldswidget(name), nil, nil),
 	}
 }
 
 type listfield struct {
-	name     string
-	newfield NewFieldFunc
-	match    *regexp.Regexp
-	fields   []Field
+	name   string
+	base   Field
+	fields []Field
 	*processor
 }
 
@@ -61,10 +65,19 @@ func (lf *listfield) Get() *Value {
 }
 
 func (lf *listfield) Set(r *http.Request) {
+	lf.fields = nil
+	pl := 0
 	for k, _ := range r.PostForm {
-		if lf.match.MatchString(k) {
-			n := lf.newfield(k, r)
-			lf.fields = append(lf.fields, n)
+		if getregexp(lf.name).MatchString(k) {
+			pl++
+		}
+	}
+	if pl > 0 {
+		for x := 0; x < pl; x++ {
+			nf := lf.base.New()
+			renamefield(lf.name, x, nf)
+			nf.Set(r)
+			lf.fields = append(lf.fields, nf)
 		}
 	}
 }

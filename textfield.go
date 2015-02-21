@@ -6,13 +6,13 @@ import (
 	"strings"
 )
 
-var textwidget Widget = NewDefaultWidget(`<input type="text" name="{{ .Name }}" value="{{ .Get }}">`)
+var textwidget Widget = NewWidget(`<input type="text" name="{{ .Name }}" value="{{ .Get }}">`)
 
-func TextField(name string) *textfield {
+func TextField(name string) Field {
 	return &textfield{
 		name:      name,
 		data:      NewValue(""),
-		processor: DefaultProcessor(textwidget),
+		processor: NewProcessor(textwidget, nil, nil),
 	}
 }
 
@@ -45,23 +45,23 @@ func (t *textfield) Set(r *http.Request) {
 
 func TextAreaWidget(rows, cols int) Widget {
 	ta := fmt.Sprintf(`<textarea name="{{ .Name }}" rows="%d" cols"%d">{{ .Get }}</textarea>`, rows, cols)
-	return NewDefaultWidget(ta)
+	return NewWidget(ta)
 }
 
-func TextAreaField(name string, rows, cols int) *textfield {
+func TextAreaField(name string, rows, cols int) Field {
 	return &textfield{
 		name:      name,
 		data:      NewValue(""),
-		processor: DefaultProcessor(TextAreaWidget(rows, cols)),
+		processor: NewProcessor(TextAreaWidget(rows, cols), nil, nil),
 	}
 }
 
-var hiddenwidget Widget = NewDefaultWidget(`<input type="hidden" name="{{ .Name }}" value="{{ .Get }}">`)
+var hiddenwidget Widget = NewWidget(`<input type="hidden" name="{{ .Name }}" value="{{ .Get }}">`)
 
-func HiddenField(name string) *textfield {
+func HiddenField(name string) Field {
 	return &textfield{
 		name:      name,
 		data:      NewValue(""),
-		processor: DefaultProcessor(hiddenwidget),
+		processor: NewProcessor(hiddenwidget, nil, nil),
 	}
 }

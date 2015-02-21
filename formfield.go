@@ -9,7 +9,7 @@ import (
 
 func formfieldwidget(name string) Widget {
 	lfw := fmt.Sprintf(`<fieldset name="%s"><ul>{{ range $x := .Get.Raw }}<li>{{ .Render }}</li>{{ end }}</ul></fieldset>`, name)
-	return NewDefaultWidget(lfw)
+	return NewWidget(lfw)
 }
 
 func renameformfield(name string, number int, f Form) {
@@ -29,16 +29,16 @@ func addform(name string, number int, form Form) []Form {
 	return ret
 }
 
-func FormField(name string, f Form) *formfield {
+func FormField(name string, f Form) Field {
 	return FormsField(name, 1, f)
 }
 
-func FormsField(name string, startwith int, start Form) *formfield {
+func FormsField(name string, startwith int, start Form) Field {
 	return &formfield{
 		name:      name,
 		base:      start,
 		forms:     addform(name, startwith, start),
-		processor: DefaultProcessor(formfieldwidget(name)),
+		processor: NewProcessor(formfieldwidget(name), nil, nil),
 	}
 }
 
@@ -67,12 +67,10 @@ func (ff *formfield) Get() *Value {
 
 func (ff *formfield) Set(r *http.Request) {
 	ff.forms = nil
-	var p map[string][]string = make(map[string][]string)
 	pl := 0
-	for k, v := range r.PostForm {
+	for k, _ := range r.PostForm {
 		if getregexp(ff.name).MatchString(k) {
 			pl++
-			p[k] = v
 		}
 	}
 	if pl > 0 {

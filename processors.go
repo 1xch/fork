@@ -21,7 +21,7 @@ type processor struct {
 	Filterer
 }
 
-func DefaultProcessor(w Widget) *processor {
+func NewProcessor(w Widget, validaters []interface{}, filters []interface{}) *processor {
 	return &processor{
 		Widget:    w,
 		Errorer:   NewErrorer(),
@@ -35,9 +35,9 @@ type Widget interface {
 	RenderWith(map[string]interface{}) string
 }
 
-func NewDefaultWidget(t string) *DefaultWidget {
+func NewWidget(t string) Widget {
 	var err error
-	ti := &DefaultWidget{}
+	ti := &widget{}
 	ti.widget, err = template.New("widget").Parse(t)
 	if err != nil {
 		ti.widget, _ = template.New("errorwidget").Parse(err.Error())
@@ -45,11 +45,11 @@ func NewDefaultWidget(t string) *DefaultWidget {
 	return ti
 }
 
-type DefaultWidget struct {
+type widget struct {
 	widget *template.Template
 }
 
-func (w *DefaultWidget) Render(f Field) string {
+func (w *widget) Render(f Field) string {
 	var buffer bytes.Buffer
 	err := w.widget.Execute(&buffer, f)
 	if err == nil {
@@ -58,7 +58,7 @@ func (w *DefaultWidget) Render(f Field) string {
 	return err.Error()
 }
 
-func (w *DefaultWidget) RenderWith(m map[string]interface{}) string {
+func (w *widget) RenderWith(m map[string]interface{}) string {
 	var buffer bytes.Buffer
 	err := w.widget.Execute(&buffer, m)
 	if err == nil {
@@ -71,7 +71,7 @@ type Errorer interface {
 	Errors(...string) []string
 }
 
-func NewErrorer() *errorer {
+func NewErrorer() Errorer {
 	return &errorer{}
 }
 
@@ -89,8 +89,8 @@ type Validater interface {
 	Validate(Field) error
 }
 
-func NewValidater() *validater {
-	return &validater{}
+func NewValidater(v ...interface{}) Validater {
+	return &validater{validaters: reflectValidaters(v...)}
 }
 
 type validater struct {
@@ -104,7 +104,7 @@ func (v *validater) Valid() bool {
 
 func (v *validater) Validate(f Field) error {
 	for _, vdr := range v.validaters {
-		err := validate(vdr, f)
+		err := Validate(vdr, f)
 		if err != nil {
 			v.valid = false
 		}
@@ -117,12 +117,20 @@ func (v *validater) AddValidater(fn interface{}) {
 	v.validaters = append(v.validaters, valueValidater(fn))
 }
 
+func reflectValidaters(fns ...interface{}) []reflect.Value {
+	var ret []reflect.Value
+	for _, fn := range fns {
+		ret = append(ret, valueValidater(fn))
+	}
+	return ret
+}
+
 type Filterer interface {
 	Filter(Field)
 }
 
-func NewFilterer() *filterer {
-	return &filterer{}
+func NewFilterer(f ...interface{}) Filterer {
+	return &filterer{filters: reflectFilters(f...)}
 }
 
 type filterer struct {
@@ -131,12 +139,20 @@ type filterer struct {
 
 func (fr *filterer) Filter(fd Field) {
 	for _, fn := range fr.filters {
-		_ = filter(fn, fd)
+		_ = Filter(fn, fd)
 	}
 }
 
 func (fr *filterer) AddFilter(fn interface{}) {
 	fr.filters = append(fr.filters, valueFilter(fn))
+}
+
+func reflectFilters(fns ...interface{}) []reflect.Value {
+	var ret []reflect.Value
+	for _, fn := range fns {
+		ret = append(ret, valueFilter(fn))
+	}
+	return ret
 }
 
 var errorType = reflect.TypeOf((*error)(nil)).Elem()
@@ -189,7 +205,7 @@ func canBeNil(typ reflect.Type) bool {
 	return false
 }
 
-func validate(fn reflect.Value, args ...interface{}) error {
+func Validate(fn reflect.Value, args ...interface{}) error {
 	validated, err := call(fn, args...)
 	if err != nil {
 		return err
@@ -197,7 +213,7 @@ func validate(fn reflect.Value, args ...interface{}) error {
 	return validated.(error)
 }
 
-func filter(fn reflect.Value, args ...interface{}) interface{} {
+func Filter(fn reflect.Value, args ...interface{}) interface{} {
 	filtered, err := call(fn, args...)
 	if err != nil {
 		return err

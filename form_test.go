@@ -9,14 +9,8 @@ import (
 	"testing"
 )
 
-func makenewtextfield(name string, req *http.Request) Field {
-	t := TextField(name)
-	t.Set(req)
-	return t
-}
-
 func SimpleForm() Form {
-	return NewForm(TextField("formfieldtext"), BooleanField("formfieldbool", "FFbool", false))
+	return NewForm(TextField("formfieldtext"), BoolField("formfieldbool", "FormFieldBool", false))
 }
 
 func NewTestForm(fds ...Field) Form {
@@ -38,6 +32,18 @@ func PerformPost(th *TestHandler, values string) *httptest.ResponseRecorder {
 	w := httptest.NewRecorder()
 	th.ServeHTTP(w, req)
 	return w
+}
+
+func PerformForForm(f Form, postdata string) (*httptest.ResponseRecorder, *httptest.ResponseRecorder) {
+	ts := testserve()
+
+	ts.handlers["GET"] = getformhandlerfor(f)
+	ts.handlers["POST"] = postformhandlerfor(f)
+
+	w1 := PerformGet(ts)
+	w2 := PerformPost(ts, postdata)
+
+	return w1, w2
 }
 
 type TestHandler struct {
@@ -81,66 +87,56 @@ func postformhandlerfor(f Form) func(w http.ResponseWriter, r *http.Request) {
 }
 
 func TestTextField(t *testing.T) {
-	ts := testserve()
-
 	f := NewTestForm(TextField("text"))
-
-	ts.handlers["GET"] = getformhandlerfor(f)
-	ts.handlers["POST"] = postformhandlerfor(f)
-
-	w := PerformGet(ts)
-	fmt.Printf("%+v\n\n\n", w.Body)
-
-	w = PerformPost(ts, `text=TEXT`)
-	fmt.Printf("%+v\n\n\n", w.Body)
+	w1, w2 := PerformForForm(f, `text=TEXT`)
+	fmt.Printf("%+v\n\n\n%+v\n\n\n", w1, w2)
 }
 
 func TestBoolField(t *testing.T) {
-	ts := testserve()
-
-	f := NewTestForm(BooleanField("yes", "YES", true), BooleanField("no", "NO", false))
-
-	ts.handlers["GET"] = getformhandlerfor(f)
-	ts.handlers["POST"] = postformhandlerfor(f)
-
-	w := PerformGet(ts)
-	fmt.Printf("%+v\n\n\n", w.Body)
-
-	w = PerformPost(ts, `yes=false&no=true`)
-	fmt.Printf("%+v\n\n\n", w.Body)
-
+	f := NewTestForm(BoolField("yes", "YES", true), BoolField("no", "NO", false))
+	w1, w2 := PerformForForm(f, `yes=false&no=true`)
+	fmt.Printf("%+v\n\n\n%+v\n\n\n", w1, w2)
 }
 
-var ListField1 Field = ListField("listfield", makenewtextfield, TextField("zero"))
+func TestRadioField(t *testing.T) {
+	f := NewTestForm(RadioField("radiofield", "UP", "up", true), RadioField("radiofield", "DOWN", "down", false))
+	w1, w2 := PerformForForm(f, ``)
+	fmt.Printf("%+v\n\n\n%+v\n\n\n", w1, w2)
+}
+
+func TestCheckField(t *testing.T) {
+	f := NewTestForm(CheckField("checkfield-1", "left"), CheckField("checkfield-2", "right"))
+	w1, w2 := PerformForForm(f, ``)
+	fmt.Printf("%+v\n\n\n%+v\n\n\n", w1, w2)
+}
+
+func TestSelectField(t *testing.T) {
+	var testoptions []Option = []Option{
+		[2]string{"one", "ONE"},
+		[2]string{"two", "TWO"},
+		[2]string{"three", "3"},
+	}
+
+	f := NewTestForm(SelectField("selectfield", testoptions...))
+
+	w1, w2 := PerformForForm(f, ``)
+	fmt.Printf("%+v\n\n\n%+v\n\n\n", w1, w2)
+}
 
 func TestListField(t *testing.T) {
-	ts := testserve()
+	var ListField1 Field = ListField("listfield", 3, TextField("TEST"))
 
 	f := NewTestForm(ListField1)
 
-	ts.handlers["GET"] = getformhandlerfor(f)
-	ts.handlers["POST"] = postformhandlerfor(f)
-
-	w := PerformGet(ts)
-	fmt.Printf("%+v\n\n\n", w.Body)
-
-	w = PerformPost(ts, `listfield-0-zero=IamZERO&listfield-1-one=IamONE&listfield7-seven=IshouldnotbeSEVEN`)
-	fmt.Printf("%+v\n\n\n", w.Body)
+	w1, w2 := PerformForForm(f, `listfield-0-TEST=IamZERO&listfield-1-TEST=IamONE&listfield7-seven=IshouldnotbeSEVEN`)
+	fmt.Printf("%+v\n\n\n%+v\n\n\n", w1, w2)
 }
 
-var FormsField1 Field = FormsField("formfield", 2, SimpleForm())
-
 func TestFormsField(t *testing.T) {
-	ts := testserve()
+	var FormsField1 Field = FormsField("formfield", 2, SimpleForm())
 
 	f := NewTestForm(FormsField1)
 
-	ts.handlers["GET"] = getformhandlerfor(f)
-	ts.handlers["POST"] = postformhandlerfor(f)
-
-	w := PerformGet(ts)
-	fmt.Printf("%+v\n\n\n", w.Body)
-
-	w = PerformPost(ts, `formfield-0-formfieldtext-0=FORMFIELD0&formfield-0-formfieldbool-1=true&formfield-1-formfieldtext-0=FORMFIELD1&formfield-1-formfieldbool-1=false`)
-	fmt.Printf("%+v\n\n\n", w.Body)
+	w1, w2 := PerformForForm(f, `formfield-0-formfieldtext-0=FORMFIELD0&formfield-0-formfieldbool-1=true&formfield-1-formfieldtext-0=FORMFIELD1&formfield-1-formfieldbool-1=false`)
+	fmt.Printf("%+v\n\n\n%+v\n\n\n", w1, w2)
 }

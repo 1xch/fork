@@ -17,18 +17,18 @@ type Former interface {
 	Valid() bool
 }
 
-func NewForm(fs ...Field) *defaultform {
-	return &defaultform{fields: fs}
+func NewForm(fs ...Field) Form {
+	return &form{fields: fs}
 }
 
-type defaultform struct {
+type form struct {
 	//Validater
 	fields []Field
 }
 
-func (df *defaultform) New() Form {
-	var newform defaultform = *df
-	fs := df.fields
+func (f *form) New() Form {
+	var newform form = *f
+	fs := f.fields
 	newform.fields = nil
 	for _, field := range fs {
 		newform.fields = append(newform.fields, field.New())
@@ -36,19 +36,19 @@ func (df *defaultform) New() Form {
 	return &newform
 }
 
-func (df *defaultform) Fields(fs ...Field) []Field {
-	df.fields = append(df.fields, fs...)
-	return df.fields
+func (f *form) Fields(fs ...Field) []Field {
+	f.fields = append(f.fields, fs...)
+	return f.fields
 }
 
-func (df *defaultform) Process(r *http.Request) {
-	for _, fd := range df.Fields() {
+func (f *form) Process(r *http.Request) {
+	for _, fd := range f.Fields() {
 		fd.Set(r)
 	}
 }
 
-func (df *defaultform) Valid() bool {
-	for _, fd := range df.Fields() {
+func (f *form) Valid() bool {
+	for _, fd := range f.Fields() {
 		if !fd.Valid() {
 			return false
 		}
@@ -56,9 +56,9 @@ func (df *defaultform) Valid() bool {
 	return true
 }
 
-func (df *defaultform) Render() string {
+func (f *form) Render() string {
 	b := new(bytes.Buffer)
-	for _, fd := range df.Fields() {
+	for _, fd := range f.Fields() {
 		_, _ = b.WriteString(fd.Render(fd))
 	}
 	return b.String()
