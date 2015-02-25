@@ -6,36 +6,47 @@ import (
 	"strings"
 )
 
-func selectwidget(name string) Widget {
-	ow := fmt.Sprintf(`<select name="%s">{{  range .Get.Raw }}<option value={{ .Value }}{{ if .Set }} selected{{ end }}>{{ .Label }}</option>{{ end }}</select>`, name)
-	return NewWidget(ow)
+type Selection struct {
+	Value string
+	Label string
+	Set   bool
 }
 
-func SelectOptions(selected Option, opts []Option) *Value {
-	var val []*OptionInfo
-	val = append(val, &OptionInfo{selected[0], selected[1], true})
-	for _, o := range opts {
-		val = append(val, &OptionInfo{o[0], o[1], false})
-	}
-	return NewValue(val)
+func NewSelection(value string, label string, set bool) *Selection {
+	return &Selection{value, label, set}
 }
 
-func SelectField(name string, opts ...Option) Field {
+var selectbase string = `<select name="{{ .Name }}" %s>{{ range $x := .Get.Raw }}<option value="{{ $x.Value }}"{{ if $x.Set }} selected{{ end }}>{{ $x.Label}}</option>{{ end }}</select>`
+
+func selectwidget(options ...string) Widget {
+	return NewWidget(fmt.Sprintf(selectbase, strings.Join(options, " ")))
+}
+
+func SelectField(name string, s ...*Selection) Field {
 	return &selectfield{
-		name:      name,
-		data:      SelectOptions(opts[0], opts[1:]),
-		processor: NewProcessor(selectwidget(name), nil, nil),
+		name:       name,
+		Selections: s,
+		processor:  NewProcessor(selectwidget(), nil, nil),
+	}
+}
+
+func MultiSelectField(name string, s ...*Selection) Field {
+	return &selectfield{
+		name:       name,
+		Selections: s,
+		processor:  NewProcessor(selectwidget("multiple"), nil, nil),
 	}
 }
 
 type selectfield struct {
-	name string
-	data *Value
+	name       string
+	Selections []*Selection
 	*processor
 }
 
 func (s *selectfield) New() Field {
 	var newfield selectfield = *s
+	copy(newfield.Selections, s.Selections)
 	return &newfield
 }
 
@@ -47,14 +58,69 @@ func (s *selectfield) Name(name ...string) string {
 }
 
 func (s *selectfield) Get() *Value {
-	return s.data
+	return NewValue(s.Selections)
+}
+
+func setselection(v string, selections []*Selection) {
+	for _, s := range selections {
+		if s.Value == v {
+			s.Set = true
+		}
+	}
 }
 
 func (s *selectfield) Set(req *http.Request) {
-	//val := req.FormValue(b.Name())
-	//set, err := strconv.ParseBool(val)
-	//if err != nil {
-	//	set = false //b.data = NewValue(boolinfo(b.name, b.label, false))
-	//}
-	//b.data = NewValue(boolinfo(b.name, b.label, set))
+	val := strings.Split(req.FormValue(s.Name()), " ")
+	for _, v := range val {
+		setselection(v, s.Selections)
+	}
+}
+
+type radiofield struct {
+	name       string
+	Selections []Field
+	*processor
+}
+
+func (r *radiofield) New() Field {
+	var newfield radiofield = *r
+	copy(newfield.Selections, r.Selections)
+	return &newfield
+}
+
+func (r *radiofield) Name(name ...string) string {
+	if len(name) > 0 {
+		r.name = strings.Join(name, "-")
+	}
+	return r.name
+}
+
+func (r *radiofield) Get() *Value {
+	return NewValue(r.Selections)
+}
+
+func (r *radiofield) Set(req *http.Request) {
+	for _, s := range r.Selections {
+		s.Set(req)
+	}
+}
+
+func radiowidget(name, legend string) Widget {
+	return NewWidget(fmt.Sprintf(`<fieldset name="%s"><legend>%s</legend><ul>{{ range $x := .Selections }}<li>{{ .Render $x }}</li>{{ end }}</ul></fieldset>`, name, legend))
+}
+
+func makeradioinputs(name string, selections []*Selection) []Field {
+	var ret []Field
+	for _, s := range selections {
+		ret = append(ret, RadioInput(name, s.Label, s.Value, false))
+	}
+	return ret
+}
+
+func RadioField(name string, legend string, s ...*Selection) Field {
+	return &radiofield{
+		name:       name,
+		Selections: makeradioinputs(name, s),
+		processor:  NewProcessor(radiowidget(name, legend), nil, nil),
+	}
 }

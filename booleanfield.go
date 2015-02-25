@@ -1,33 +1,29 @@
 package fork
 
 import (
+	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 )
 
-type Option [2]string
-
-type OptionInfo struct {
-	Value string
-	Label string
-	Set   bool
-}
-
-func optioninfo(value string, label string, set bool) *OptionInfo {
-	return &OptionInfo{value, label, set}
+func BooleanField(name string, label string, start bool, options ...string) Field {
+	return &booleanfield{
+		name:      name,
+		Selection: NewSelection(name, label, start),
+		processor: NewProcessor(togglewidget("checkbox", options...), nil, nil),
+	}
 }
 
 type booleanfield struct {
-	name    string
-	label   string
-	data    *Value
-	setfunc func(*booleanfield, *http.Request)
+	name      string
+	Selection *Selection
 	*processor
 }
 
 func (b *booleanfield) New() Field {
 	var newfield booleanfield = *b
+	var newselection Selection = *b.Selection
+	newfield.Selection = &newselection
 	return &newfield
 }
 
@@ -39,58 +35,34 @@ func (b *booleanfield) Name(name ...string) string {
 }
 
 func (b *booleanfield) Get() *Value {
-	return b.data
+	return NewValue(b.Selection)
 }
 
 func (b *booleanfield) Set(req *http.Request) {
-	b.setfunc(b, req)
-}
-
-var boolwidget Widget = NewWidget(`<input type="checkbox" name="{{ .Name }}"{{ if .Get.Raw.Set }} checked{{ end }}>{{ .Get.Raw.Label }}`)
-
-func BoolField(name string, label string, start bool) Field {
-	return &booleanfield{
-		name:      name,
-		label:     label,
-		data:      NewValue(optioninfo(name, label, start)),
-		setfunc:   boolset,
-		processor: NewProcessor(boolwidget, nil, nil),
-	}
-}
-
-func boolset(b *booleanfield, req *http.Request) {
 	val := req.FormValue(b.Name())
-	set, err := strconv.ParseBool(val)
-	if err != nil {
-		set = false
+	if val == b.Selection.Value {
+		b.Selection.Set = true
+	} else {
+		b.Selection.Set = false
 	}
-	b.data = NewValue(optioninfo(b.name, b.label, set))
 }
 
-var radiowidget Widget = NewWidget(`<input type="radio" name="{{ .Name }}" value="{{ .Get.Raw.Value }}"{{ if .Get.Raw.Set }} checked{{ end }}>{{ .Get.Raw.Label }}`)
+func togglewidget(input string, options ...string) Widget {
+	return NewWidget(fmt.Sprintf(`<input type="%s" name="{{ .Name }}" value="{{ .Selection.Value }}"{{ if .Selection.Set }} checked{{ end }} %s>{{ .Selection.Label }}`, input, strings.Join(options, " ")))
+}
 
-func RadioField(name string, label string, value string, checked bool) Field {
+func ToggleInput(name string, label string, value string, widget Widget, checked bool) Field {
 	return &booleanfield{
 		name:      name,
-		label:     label,
-		data:      NewValue(optioninfo(value, label, checked)),
-		setfunc:   radioset,
-		processor: NewProcessor(radiowidget, nil, nil),
+		Selection: NewSelection(value, label, checked),
+		processor: NewProcessor(widget, nil, nil),
 	}
 }
 
-func radioset(b *booleanfield, req *http.Request) {}
-
-var checkboxwidget Widget = NewWidget(`<input type="checkbox" name="{{ .Name }}" value="{{ .Get.Raw.Value }}">{{ .Get.Raw.Label }}`)
-
-func CheckField(name string, label string) Field {
-	return &booleanfield{
-		name:      name,
-		label:     label,
-		data:      NewValue(optioninfo("", label, false)),
-		setfunc:   checkset,
-		processor: NewProcessor(checkboxwidget, nil, nil),
-	}
+func RadioInput(name string, label string, value string, checked bool, options ...string) Field {
+	return ToggleInput(name, label, value, togglewidget("radio", options...), checked)
 }
 
-func checkset(b *booleanfield, req *http.Request) {}
+func CheckboxInput(name string, label string, value string, checked bool, options ...string) Field {
+	return ToggleInput(name, label, value, togglewidget("checkbox", options...), checked)
+}

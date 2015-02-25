@@ -2,6 +2,7 @@ package fork
 
 import (
 	"bytes"
+	"html/template"
 	"net/http"
 )
 
@@ -13,8 +14,9 @@ type Form interface {
 type Former interface {
 	Fields(...Field) []Field
 	Process(*http.Request)
-	Render() string
-	Valid() bool
+	String() string
+	Render() template.HTML
+	Validater
 }
 
 func NewForm(fs ...Field) Form {
@@ -22,8 +24,8 @@ func NewForm(fs ...Field) Form {
 }
 
 type form struct {
-	//Validater
 	fields []Field
+	Validater
 }
 
 func (f *form) New() Form {
@@ -56,10 +58,18 @@ func (f *form) Valid() bool {
 	return true
 }
 
-func (f *form) Render() string {
+func (f *form) Validate(fd Field) error {
+	return fd.Validate(fd)
+}
+
+func (f *form) String() string {
 	b := new(bytes.Buffer)
 	for _, fd := range f.Fields() {
-		_, _ = b.WriteString(fd.Render(fd))
+		_, _ = b.WriteString(fd.String(fd))
 	}
 	return b.String()
+}
+
+func (f *form) Render() template.HTML {
+	return template.HTML(f.String())
 }

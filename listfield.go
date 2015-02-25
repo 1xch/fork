@@ -8,9 +8,8 @@ import (
 	"strings"
 )
 
-func listfieldswidget(name string) Widget {
-	lfw := fmt.Sprintf(`<fieldset name="%s"><ul>{{ range $x := .Get.Raw }}<li>{{ .Render $x }}</li>{{ end }}</ul></fieldset>`, name)
-	return NewWidget(lfw)
+func listfieldswidget(options ...string) Widget {
+	return NewWidget(fmt.Sprintf(`<fieldset name="{{ .Name }}" %s><ul>{{ range $x := .Get.Raw }}<li>{{ .Render $x }}</li>{{ end }}</ul></fieldset>`, strings.Join(options, " ")))
 }
 
 func renamefield(name string, number int, field Field) Field {
@@ -22,8 +21,7 @@ func renamefields(name string, number int, field Field) []Field {
 	var ret []Field
 	for i := 0; i < number; i++ {
 		fd := field.New()
-		renamefield(name, i, fd)
-		ret = append(ret, fd)
+		ret = append(ret, renamefield(name, i, fd))
 	}
 	return ret
 }
@@ -32,12 +30,12 @@ func getregexp(name string) *regexp.Regexp {
 	return regexp.MustCompile(fmt.Sprintf("^%s-", name))
 }
 
-func ListField(name string, startwith int, start Field) Field {
+func ListField(name string, startwith int, start Field, options ...string) Field {
 	return &listfield{
 		name:      name,
 		base:      start,
 		fields:    renamefields(name, startwith, start),
-		processor: NewProcessor(listfieldswidget(name), nil, nil),
+		processor: NewProcessor(listfieldswidget(options...), nil, nil),
 	}
 }
 

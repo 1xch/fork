@@ -8,22 +8,22 @@ import (
 )
 
 func formfieldwidget(name string) Widget {
-	lfw := fmt.Sprintf(`<fieldset name="%s"><ul>{{ range $x := .Get.Raw }}<li>{{ .Render }}</li>{{ end }}</ul></fieldset>`, name)
+	lfw := fmt.Sprintf(`<fieldset name="%s"><input type="hidden" name="%s" value="{{ .Index }}"><ul>{{ range $x := .Get.Raw }}<li>{{ .Render }}</li>{{ end }}</ul></fieldset>`, name, name)
 	return NewWidget(lfw)
 }
 
-func renameformfield(name string, number int, f Form) {
+func renameformfields(name string, number int, f Form) Form {
 	for index, field := range f.Fields() {
 		field.Name(name, strconv.Itoa(number), field.Name(), strconv.Itoa(index))
 	}
+	return f
 }
 
 func addform(name string, number int, form Form) []Form {
 	var ret []Form
 	for i := 0; i < number; i++ {
 		n := form.New()
-		renameformfield(name, i, n)
-		ret = append(ret, n)
+		ret = append(ret, renameformfields(name, i, n))
 
 	}
 	return ret
@@ -37,6 +37,7 @@ func FormsField(name string, startwith int, start Form) Field {
 	return &formfield{
 		name:      name,
 		base:      start,
+		Index:     startwith,
 		forms:     addform(name, startwith, start),
 		processor: NewProcessor(formfieldwidget(name), nil, nil),
 	}
@@ -45,6 +46,7 @@ func FormsField(name string, startwith int, start Form) Field {
 type formfield struct {
 	name  string
 	base  Form
+	Index int
 	forms []Form
 	*processor
 }
@@ -66,20 +68,20 @@ func (ff *formfield) Get() *Value {
 }
 
 func (ff *formfield) Set(r *http.Request) {
-	ff.forms = nil
-	pl := 0
-	for k, _ := range r.PostForm {
-		if getregexp(ff.name).MatchString(k) {
-			pl++
-		}
+	if len(r.PostForm) == 0 {
+		r.ParseForm()
 	}
-	if pl > 0 {
-		al := pl / len(ff.base.Fields())
-		for x := 0; x < al; x++ {
-			nf := ff.base.New()
-			renameformfield(ff.name, x, nf)
-			nf.Process(r)
-			ff.forms = append(ff.forms, nf)
-		}
+	ff.forms = nil
+	index := r.FormValue(ff.Name())
+	i, err := strconv.Atoi(index)
+	if err != nil {
+		ff.Errors("form field index error: %s", err.Error())
+	}
+	ff.Index = i
+	for x := 0; x < ff.Index; x++ {
+		nf := ff.base.New()
+		renameformfields(ff.name, x, nf)
+		nf.Process(r)
+		ff.forms = append(ff.forms, nf)
 	}
 }

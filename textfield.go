@@ -6,19 +6,25 @@ import (
 	"strings"
 )
 
-var textwidget Widget = NewWidget(`<input type="text" name="{{ .Name }}" value="{{ .Get }}">`)
+func textwidget(options ...string) Widget {
+	return NewWidget(fmt.Sprintf(`<input type="text" name="{{ .Name }}" value="{{ .Text }}" %s>`, strings.Join(options, " ")))
+}
 
-func TextField(name string) Field {
+func newtextfield(name string, widget Widget) Field {
 	return &textfield{
 		name:      name,
-		data:      NewValue(""),
-		processor: NewProcessor(textwidget, nil, nil),
+		Text:      "",
+		processor: NewProcessor(widget, nil, nil),
 	}
+}
+
+func TextField(name string, options ...string) Field {
+	return newtextfield(name, textwidget(options...))
 }
 
 type textfield struct {
 	name string
-	data *Value
+	Text string
 	*processor
 }
 
@@ -35,33 +41,34 @@ func (t *textfield) Name(name ...string) string {
 }
 
 func (t *textfield) Get() *Value {
-	return t.data
+	return NewValue(t.Text)
 }
 
 func (t *textfield) Set(r *http.Request) {
 	val := r.FormValue(t.Name())
-	t.data = NewValue(val)
+	t.Text = val
 }
 
-func TextAreaWidget(rows, cols int) Widget {
-	ta := fmt.Sprintf(`<textarea name="{{ .Name }}" rows="%d" cols"%d">{{ .Get }}</textarea>`, rows, cols)
-	return NewWidget(ta)
+func textareawidget(options ...string) Widget {
+	return NewWidget(fmt.Sprintf(`<textarea name="{{ .Name }}" %s>{{ .Text }}</textarea>`, strings.Join(options, " ")))
 }
 
-func TextAreaField(name string, rows, cols int) Field {
-	return &textfield{
-		name:      name,
-		data:      NewValue(""),
-		processor: NewProcessor(TextAreaWidget(rows, cols), nil, nil),
-	}
+func TextAreaField(name string, options ...string) Field {
+	return newtextfield(name, textareawidget(options...))
 }
 
-var hiddenwidget Widget = NewWidget(`<input type="hidden" name="{{ .Name }}" value="{{ .Get }}">`)
+func hiddenwidget(options ...string) Widget {
+	return NewWidget(fmt.Sprintf(`<input type="hidden" name="{{ .Name }}" value="{{ .Text }}" %s>`, strings.Join(options, " ")))
+}
 
-func HiddenField(name string) Field {
-	return &textfield{
-		name:      name,
-		data:      NewValue(""),
-		processor: NewProcessor(hiddenwidget, nil, nil),
-	}
+func HiddenField(name string, options ...string) Field {
+	return newtextfield(name, hiddenwidget(options...))
+}
+
+func passwordwidget(options ...string) Widget {
+	return NewWidget(fmt.Sprintf(`<input type="password" name="{{ .Name }}" value="{{ .Text }}" %s>`, strings.Join(options, " ")))
+}
+
+func PassWordField(name string, options ...string) Field {
+	return newtextfield(name, passwordwidget(options...))
 }

@@ -3,8 +3,8 @@ package fork
 import (
 	"bytes"
 	"fmt"
+	"html/template"
 	"reflect"
-	"text/template"
 )
 
 type Processor interface {
@@ -31,8 +31,9 @@ func NewProcessor(w Widget, validaters []interface{}, filters []interface{}) *pr
 }
 
 type Widget interface {
-	Render(Field) string
-	RenderWith(map[string]interface{}) string
+	String(interface{}) string
+	Render(Field) template.HTML
+	RenderWith(map[string]interface{}) template.HTML
 }
 
 func NewWidget(t string) Widget {
@@ -49,22 +50,21 @@ type widget struct {
 	widget *template.Template
 }
 
-func (w *widget) Render(f Field) string {
+func (w *widget) String(i interface{}) string {
 	var buffer bytes.Buffer
-	err := w.widget.Execute(&buffer, f)
+	err := w.widget.Execute(&buffer, i)
 	if err == nil {
 		return buffer.String()
 	}
 	return err.Error()
 }
 
-func (w *widget) RenderWith(m map[string]interface{}) string {
-	var buffer bytes.Buffer
-	err := w.widget.Execute(&buffer, m)
-	if err == nil {
-		return buffer.String()
-	}
-	return err.Error()
+func (w *widget) Render(f Field) template.HTML {
+	return template.HTML(w.String(f))
+}
+
+func (w *widget) RenderWith(m map[string]interface{}) template.HTML {
+	return template.HTML(w.String(m))
 }
 
 type Errorer interface {
