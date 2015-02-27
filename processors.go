@@ -25,8 +25,8 @@ func NewProcessor(w Widget, validaters []interface{}, filters []interface{}) *pr
 	return &processor{
 		Widget:    w,
 		Errorer:   NewErrorer(),
-		Validater: NewValidater(),
-		Filterer:  NewFilterer(),
+		Validater: NewValidater(validaters...),
+		Filterer:  NewFilterer(filters...),
 	}
 }
 
@@ -36,10 +36,17 @@ type Widget interface {
 	RenderWith(map[string]interface{}) template.HTML
 }
 
+//{{ define "fielderrors" }}{{ if not .Valid }}{{ else }}{{ end }}{{ end }}
+const defaulttemplate = `
+{{ define "fielderrors" }}<div class="field-errors"><ul>{{ range $x := .Errors }}<li>{{ $x }}</li>{{ end }}</ul></div>{{ end }}
+{{ define "default" }}%s{{ if .Errors }}{{ template "fielderrors" .}}{{end}}{{ end }}
+`
+
 func NewWidget(t string) Widget {
 	var err error
-	ti := &widget{}
-	ti.widget, err = template.New("widget").Parse(t)
+	ti := &widget{name: "default"}
+	tt := fmt.Sprintf(defaulttemplate, t)
+	ti.widget, err = template.New("widget").Parse(tt)
 	if err != nil {
 		ti.widget, _ = template.New("errorwidget").Parse(err.Error())
 	}
@@ -47,12 +54,13 @@ func NewWidget(t string) Widget {
 }
 
 type widget struct {
+	name   string
 	widget *template.Template
 }
 
 func (w *widget) String(i interface{}) string {
 	var buffer bytes.Buffer
-	err := w.widget.Execute(&buffer, i)
+	err := w.widget.ExecuteTemplate(&buffer, w.name, i)
 	if err == nil {
 		return buffer.String()
 	}
@@ -95,10 +103,14 @@ func NewValidater(v ...interface{}) Validater {
 
 type validater struct {
 	valid      bool
+	validated  bool
 	validaters []reflect.Value
 }
 
 func (v *validater) Valid() bool {
+	if !v.validated {
+		return true
+	}
 	return v.valid
 }
 
@@ -106,10 +118,11 @@ func (v *validater) Validate(f Field) error {
 	for _, vdr := range v.validaters {
 		err := Validate(vdr, f)
 		if err != nil {
-			v.valid = false
+			v.validated, v.valid = true, false
 		}
 		return err
 	}
+	v.validated, v.valid = true, true
 	return nil
 }
 
@@ -210,7 +223,10 @@ func Validate(fn reflect.Value, args ...interface{}) error {
 	if err != nil {
 		return err
 	}
-	return validated.(error)
+	if validated != nil {
+		return validated.(error)
+	}
+	return nil
 }
 
 func Filter(fn reflect.Value, args ...interface{}) interface{} {

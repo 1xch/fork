@@ -3,6 +3,7 @@ package fork
 import (
 	"fmt"
 	"net/http"
+	"net/mail"
 	"strings"
 )
 
@@ -47,6 +48,10 @@ func (t *textfield) Get() *Value {
 func (t *textfield) Set(r *http.Request) {
 	val := r.FormValue(t.Name())
 	t.Text = val
+	err := t.Validate(t)
+	if err != nil {
+		t.Errors(err.Error())
+	}
 }
 
 func textareawidget(options ...string) Widget {
@@ -71,4 +76,29 @@ func passwordwidget(options ...string) Widget {
 
 func PassWordField(name string, options ...string) Field {
 	return newtextfield(name, passwordwidget(options...))
+}
+
+func emailwidget(options ...string) Widget {
+	return NewWidget(fmt.Sprintf(`<input type="email" name="{{ .Name }}" value="{{ .Text }}" %s>`, strings.Join(options, " ")))
+}
+
+func EmailField(name string, options ...string) Field {
+	return &textfield{
+		name: name,
+		Text: "",
+		processor: NewProcessor(
+			emailwidget(options...),
+			[]interface{}{ValidateEmail},
+			nil,
+		),
+	}
+}
+
+func ValidateEmail(f Field) error {
+	a := f.Get()
+	_, err := mail.ParseAddress(a.String())
+	if err != nil {
+		return fmt.Errorf("Invalid email address: %s", err.Error())
+	}
+	return nil
 }

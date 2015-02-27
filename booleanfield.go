@@ -45,6 +45,10 @@ func (b *booleanfield) Set(req *http.Request) {
 	} else {
 		b.Selection.Set = false
 	}
+	err := b.Validate(b)
+	if err != nil {
+		b.Errors(err.Error())
+	}
 }
 
 func togglewidget(input string, options ...string) Widget {

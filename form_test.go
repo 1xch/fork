@@ -90,11 +90,11 @@ func testbasic(t *testing.T, name string, f Form, postprovides string, GETexpect
 	}
 
 	if !strings.Contains(w1.Body.String(), GETexpects) {
-		t.Errorf("%s GET Error\ngot\n\n%s\nshould contain:\n\n%s\n\n", name, w1.Body, GETexpects)
+		t.Errorf("\n%s GET Error\ngot\n\n%s\nshould contain:\n\n%s\n\n", name, w1.Body, GETexpects)
 	}
 
 	if !strings.Contains(w2.Body.String(), POSTexpects) {
-		t.Errorf("%s POST Error\ngot %s\nshould contain %s\n\n", name, w2.Body, POSTexpects)
+		t.Errorf("\n%s POST Error\ngot %s\nshould contain %s\n\n", name, w2.Body, POSTexpects)
 	}
 }
 
@@ -139,6 +139,25 @@ func TestPasswordField(t *testing.T) {
 		`password=PASSWORD`,
 		`<input type="password" name="password" value="" size=10 maxlength=30>`,
 		`<input type="password" name="password" value="PASSWORD" size=10 maxlength=30>`,
+	)
+}
+
+func TestEmailField(t *testing.T) {
+	testbasic(
+		t,
+		"EmailField",
+		NewForm(EmailField("email")),
+		`email=test@test.com`,
+		`<input type="email" name="email" value="" >`,
+		`<input type="email" name="email" value="test@test.com" >`,
+	)
+	testbasic(
+		t,
+		"EmailField :: Error",
+		NewForm(EmailField("email")),
+		`email=invalidemail.com`,
+		`<input type="email" name="email" value="" >`,
+		`<input type="email" name="email" value="invalidemail.com" ><div class="field-errors"><ul><li>Invalid email address: mail: missing phrase</li></ul></div>`,
 	)
 }
 
@@ -226,6 +245,17 @@ func TestListField(t *testing.T) {
 		`listfield-0-TEST=IamZERO&listfield-1-TEST=IamONE&listfield7-seven=IshouldnotbeSEVEN`,
 		`<fieldset name="listfield" ><ul><li><input type="text" name="listfield-0-TEST" value="" ></li><li><input type="text" name="listfield-1-TEST" value="" ></li><li><input type="text" name="listfield-2-TEST" value="" ></li></ul></fieldset>`,
 		`<fieldset name="listfield" ><ul><li><input type="text" name="listfield-0-TEST" value="IamZERO" ></li><li><input type="text" name="listfield-1-TEST" value="IamONE" ></li></ul></fieldset>`,
+	)
+}
+
+func TestDateField(t *testing.T) {
+	testbasic(
+		t,
+		"DateField",
+		NewForm(DateField("datefield")),
+		`datefield=26/02/2015`,
+		fmt.Sprintf(`<input type="date" pattern="%s" title="Date as DD/MM/YYYY" name="datefield" value="" >`, defaultdatePattern),
+		fmt.Sprintf(`<input type="date" pattern="%s" title="Date as DD/MM/YYYY" name="datefield" value="26/02/2015" >`, defaultdatePattern),
 	)
 }
 
