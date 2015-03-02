@@ -11,16 +11,16 @@ func textwidget(options ...string) Widget {
 	return NewWidget(fmt.Sprintf(`<input type="text" name="{{ .Name }}" value="{{ .Text }}" %s>`, strings.Join(options, " ")))
 }
 
-func newtextfield(name string, widget Widget) Field {
+func newtextfield(name string, widget Widget, validaters []interface{}, filters []interface{}) Field {
 	return &textfield{
 		name:      name,
 		Text:      "",
-		processor: NewProcessor(widget, nil, nil),
+		processor: NewProcessor(widget, validaters, filters),
 	}
 }
 
-func TextField(name string, options ...string) Field {
-	return newtextfield(name, textwidget(options...))
+func TextField(name string, validaters []interface{}, filters []interface{}, options ...string) Field {
+	return newtextfield(name, textwidget(options...), validaters, filters)
 }
 
 type textfield struct {
@@ -58,38 +58,38 @@ func textareawidget(options ...string) Widget {
 	return NewWidget(fmt.Sprintf(`<textarea name="{{ .Name }}" %s>{{ .Text }}</textarea>`, strings.Join(options, " ")))
 }
 
-func TextAreaField(name string, options ...string) Field {
-	return newtextfield(name, textareawidget(options...))
+func TextAreaField(name string, validaters []interface{}, filters []interface{}, options ...string) Field {
+	return newtextfield(name, textareawidget(options...), validaters, filters)
 }
 
 func hiddenwidget(options ...string) Widget {
 	return NewWidget(fmt.Sprintf(`<input type="hidden" name="{{ .Name }}" value="{{ .Text }}" %s>`, strings.Join(options, " ")))
 }
 
-func HiddenField(name string, options ...string) Field {
-	return newtextfield(name, hiddenwidget(options...))
+func HiddenField(name string, validaters []interface{}, filters []interface{}, options ...string) Field {
+	return newtextfield(name, hiddenwidget(options...), validaters, filters)
 }
 
 func passwordwidget(options ...string) Widget {
 	return NewWidget(fmt.Sprintf(`<input type="password" name="{{ .Name }}" value="{{ .Text }}" %s>`, strings.Join(options, " ")))
 }
 
-func PassWordField(name string, options ...string) Field {
-	return newtextfield(name, passwordwidget(options...))
+func PassWordField(name string, validaters []interface{}, filters []interface{}, options ...string) Field {
+	return newtextfield(name, passwordwidget(options...), validaters, filters)
 }
 
 func emailwidget(options ...string) Widget {
 	return NewWidget(fmt.Sprintf(`<input type="email" name="{{ .Name }}" value="{{ .Text }}" %s>`, strings.Join(options, " ")))
 }
 
-func EmailField(name string, options ...string) Field {
+func EmailField(name string, validaters []interface{}, filters []interface{}, options ...string) Field {
 	return &textfield{
 		name: name,
 		Text: "",
 		processor: NewProcessor(
 			emailwidget(options...),
-			[]interface{}{ValidateEmail},
-			nil,
+			append(validaters, ValidateEmail),
+			filters,
 		),
 	}
 }

@@ -16,25 +16,17 @@ func NewSelection(value string, label string, set bool) *Selection {
 	return &Selection{value, label, set}
 }
 
-var selectbase string = `<select name="{{ .Name }}" %s>{{ range $x := .Get.Raw }}<option value="{{ $x.Value }}"{{ if $x.Set }} selected{{ end }}>{{ $x.Label}}</option>{{ end }}</select>`
+var selectbase string = `<select name="{{ .Name }}" %s>{{ range $x := .Selections }}<option value="{{ $x.Value }}"{{ if $x.Set }} selected{{ end }}>{{ $x.Label}}</option>{{ end }}</select>`
 
 func selectwidget(options ...string) Widget {
 	return NewWidget(fmt.Sprintf(selectbase, strings.Join(options, " ")))
 }
 
-func SelectField(name string, s ...*Selection) Field {
+func SelectField(name string, s []*Selection, validaters []interface{}, filters []interface{}, options ...string) Field {
 	return &selectfield{
 		name:       name,
 		Selections: s,
-		processor:  NewProcessor(selectwidget(), nil, nil),
-	}
-}
-
-func MultiSelectField(name string, s ...*Selection) Field {
-	return &selectfield{
-		name:       name,
-		Selections: s,
-		processor:  NewProcessor(selectwidget("multiple"), nil, nil),
+		processor:  NewProcessor(selectwidget(options...), validaters, filters),
 	}
 }
 
@@ -105,8 +97,8 @@ func (r *radiofield) Set(req *http.Request) {
 	}
 }
 
-func radiowidget(name, legend string) Widget {
-	return NewWidget(fmt.Sprintf(`<fieldset name="%s"><legend>%s</legend><ul>{{ range $x := .Selections }}<li>{{ .Render $x }}</li>{{ end }}</ul></fieldset>`, name, legend))
+func radiowidget(name string, legend string, options ...string) Widget {
+	return NewWidget(fmt.Sprintf(`<fieldset name="%s" %s><legend>%s</legend><ul>{{ range $x := .Selections }}<li>{{ .Render $x }}</li>{{ end }}</ul></fieldset>`, name, strings.Join(options, " "), legend))
 }
 
 func makeradioinputs(name string, selections []*Selection) []Field {
@@ -117,10 +109,10 @@ func makeradioinputs(name string, selections []*Selection) []Field {
 	return ret
 }
 
-func RadioField(name string, legend string, s ...*Selection) Field {
+func RadioField(name string, legend string, s []*Selection, validaters []interface{}, filters []interface{}, options ...string) Field {
 	return &radiofield{
 		name:       name,
 		Selections: makeradioinputs(name, s),
-		processor:  NewProcessor(radiowidget(name, legend), nil, nil),
+		processor:  NewProcessor(radiowidget(name, legend, options...), validaters, filters),
 	}
 }

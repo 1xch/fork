@@ -86,7 +86,7 @@ func testbasic(t *testing.T, name string, f Form, postprovides string, GETexpect
 	w1, w2 := PerformForForm(f, postprovides)
 
 	if w1.Code != 200 || w2.Code != 200 {
-		t.Errorf("Response incorrect; received Get %d Post d%, expected 200", w1.Code, w2.Code)
+		t.Errorf("Response incorrect; received Get %d Post %d, expected 200", w1.Code, w2.Code)
 	}
 
 	if !strings.Contains(w1.Body.String(), GETexpects) {
@@ -102,7 +102,7 @@ func TestTextField(t *testing.T) {
 	testbasic(
 		t,
 		"TextField",
-		NewForm(TextField("text")),
+		NewForm(TextField("text", nil, nil)),
 		`text=TEXT`,
 		`<input type="text" name="text" value="" >`,
 		`<input type="text" name="text" value="TEXT" >`,
@@ -113,7 +113,7 @@ func TestTextAreaField(t *testing.T) {
 	testbasic(
 		t,
 		"TextAreaField",
-		NewForm(TextAreaField("textarea", "rows=10", "cols=10")),
+		NewForm(TextAreaField("textarea", nil, nil, "rows=10", "cols=10")),
 		`textarea=TEXTAREA`,
 		`<textarea name="textarea" rows=10 cols=10></textarea>`,
 		`<textarea name="textarea" rows=10 cols=10>TEXTAREA</textarea>`,
@@ -124,7 +124,7 @@ func TestHiddenField(t *testing.T) {
 	testbasic(
 		t,
 		"HiddenField",
-		NewForm(HiddenField("hidden")),
+		NewForm(HiddenField("hidden", nil, nil)),
 		`hidden=HIDDEN`,
 		`<input type="hidden" name="hidden" value="" >`,
 		`<input type="hidden" name="hidden" value="HIDDEN" >`,
@@ -135,7 +135,7 @@ func TestPasswordField(t *testing.T) {
 	testbasic(
 		t,
 		"PasswordField",
-		NewForm(PassWordField("password", "size=10", "maxlength=30")),
+		NewForm(PassWordField("password", nil, nil, "size=10", "maxlength=30")),
 		`password=PASSWORD`,
 		`<input type="password" name="password" value="" size=10 maxlength=30>`,
 		`<input type="password" name="password" value="PASSWORD" size=10 maxlength=30>`,
@@ -146,7 +146,7 @@ func TestEmailField(t *testing.T) {
 	testbasic(
 		t,
 		"EmailField",
-		NewForm(EmailField("email")),
+		NewForm(EmailField("email", nil, nil)),
 		`email=test@test.com`,
 		`<input type="email" name="email" value="" >`,
 		`<input type="email" name="email" value="test@test.com" >`,
@@ -154,7 +154,7 @@ func TestEmailField(t *testing.T) {
 	testbasic(
 		t,
 		"EmailField :: Error",
-		NewForm(EmailField("email")),
+		NewForm(EmailField("email", nil, nil)),
 		`email=invalidemail.com`,
 		`<input type="email" name="email" value="" >`,
 		`<input type="email" name="email" value="invalidemail.com" ><div class="field-errors"><ul><li>Invalid email address: mail: missing phrase</li></ul></div>`,
@@ -206,18 +206,15 @@ func TestSelectField(t *testing.T) {
 	testbasic(
 		t,
 		"SelectField",
-		NewForm(SelectField("selectfield", makeselectoptions("one", "two", "three")...)),
+		NewForm(SelectField("selectfield", makeselectoptions("one", "two", "three"), nil, nil)),
 		`selectfield=three`,
 		`<select name="selectfield" ><option value="one">ONE</option><option value="two">TWO</option><option value="three">THREE</option></select>`,
 		`<select name="selectfield" ><option value="one">ONE</option><option value="two">TWO</option><option value="three" selected>THREE</option></select>`,
 	)
-}
-
-func TestMultiSelectField(t *testing.T) {
 	testbasic(
 		t,
 		"MultiSelectField",
-		NewForm(MultiSelectField("multiselectfield", makeselectoptions("one", "two", "three")...)),
+		NewForm(SelectField("multiselectfield", makeselectoptions("one", "two", "three"), nil, nil, "multiple")),
 		`multiselectfield=one two three`,
 		`<select name="multiselectfield" multiple><option value="one">ONE</option><option value="two">TWO</option><option value="three">THREE</option></select>`,
 		`<select name="multiselectfield" multiple><option value="one" selected>ONE</option><option value="two" selected>TWO</option><option value="three" selected>THREE</option></select>`,
@@ -228,15 +225,34 @@ func TestRadioField(t *testing.T) {
 	testbasic(
 		t,
 		"RadioField",
-		NewForm(RadioField("radiofield-group", "Select one:", makeselectoptions("A", "B", "C", "D")...)),
+		NewForm(RadioField("radiofield-group", "Select one:", makeselectoptions("A", "B", "C", "D"), nil, nil)),
 		`radiofield-group=A`,
-		`<fieldset name="radiofield-group"><legend>Select one:</legend><ul><li><input type="radio" name="radiofield-group" value="A" >A</li><li><input type="radio" name="radiofield-group" value="B" >B</li><li><input type="radio" name="radiofield-group" value="C" >C</li><li><input type="radio" name="radiofield-group" value="D" >D</li></ul></fieldset>`,
-		`<fieldset name="radiofield-group"><legend>Select one:</legend><ul><li><input type="radio" name="radiofield-group" value="A" checked >A</li><li><input type="radio" name="radiofield-group" value="B" >B</li><li><input type="radio" name="radiofield-group" value="C" >C</li><li><input type="radio" name="radiofield-group" value="D" >D</li></ul></fieldset>`,
+		`<fieldset name="radiofield-group" ><legend>Select one:</legend><ul><li><input type="radio" name="radiofield-group" value="A" >A</li><li><input type="radio" name="radiofield-group" value="B" >B</li><li><input type="radio" name="radiofield-group" value="C" >C</li><li><input type="radio" name="radiofield-group" value="D" >D</li></ul></fieldset>`,
+		`<fieldset name="radiofield-group" ><legend>Select one:</legend><ul><li><input type="radio" name="radiofield-group" value="A" checked >A</li><li><input type="radio" name="radiofield-group" value="B" >B</li><li><input type="radio" name="radiofield-group" value="C" >C</li><li><input type="radio" name="radiofield-group" value="D" >D</li></ul></fieldset>`,
+	)
+}
+
+func TestDateField(t *testing.T) {
+	testbasic(
+		t,
+		"DateField",
+		NewForm(DateField("datefield")),
+		`datefield=26/02/2015`,
+		`<input type="date" name="datefield" value="" >`,
+		`<input type="date" name="datefield" value="26/02/2015" >`,
+	)
+	testbasic(
+		t,
+		"DateField :: Error",
+		NewForm(DateField("datefield")),
+		`datefield=26022015`,
+		`<input type="date" name="datefield" value="" >`,
+		`<input type="date" name="datefield" value="01/01/0001" ><div class="field-errors"><ul><li>Cannot parse 26022015 in format 02/01/2006</li></ul></div>`,
 	)
 }
 
 func TestListField(t *testing.T) {
-	var ListField1 Field = ListField("listfield", 3, TextField("TEST"))
+	var ListField1 Field = ListField("listfield", 3, TextField("TEST", nil, nil))
 
 	testbasic(
 		t,
@@ -248,19 +264,8 @@ func TestListField(t *testing.T) {
 	)
 }
 
-func TestDateField(t *testing.T) {
-	testbasic(
-		t,
-		"DateField",
-		NewForm(DateField("datefield")),
-		`datefield=26/02/2015`,
-		fmt.Sprintf(`<input type="date" pattern="%s" title="Date as DD/MM/YYYY" name="datefield" value="" >`, defaultdatePattern),
-		fmt.Sprintf(`<input type="date" pattern="%s" title="Date as DD/MM/YYYY" name="datefield" value="26/02/2015" >`, defaultdatePattern),
-	)
-}
-
 func SimpleForm() Form {
-	return NewForm(TextField("fftext"), BooleanField("yes", "Yes", false))
+	return NewForm(TextField("fftext", nil, nil), BooleanField("yes", "Yes", false))
 }
 
 func TestFormsField(t *testing.T) {

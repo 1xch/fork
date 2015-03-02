@@ -8,7 +8,7 @@ import (
 )
 
 func formfieldwidget(name string) Widget {
-	lfw := fmt.Sprintf(`<fieldset name="%s"><input type="hidden" name="%s" value="{{ .Index }}"><ul>{{ range $x := .Get.Raw }}<li>{{ .Render }}</li>{{ end }}</ul></fieldset>`, name, name)
+	lfw := fmt.Sprintf(`<fieldset name="%s"><input type="hidden" name="%s" value="{{ .Index }}"><ul>{{ range $x := .Forms }}<li>{{ .Render }}</li>{{ end }}</ul></fieldset>`, name, name)
 	return NewWidget(lfw)
 }
 
@@ -38,7 +38,7 @@ func FormsField(name string, startwith int, start Form) Field {
 		name:      name,
 		base:      start,
 		Index:     startwith,
-		forms:     addform(name, startwith, start),
+		Forms:     addform(name, startwith, start),
 		processor: NewProcessor(formfieldwidget(name), nil, nil),
 	}
 }
@@ -47,7 +47,7 @@ type formfield struct {
 	name  string
 	base  Form
 	Index int
-	forms []Form
+	Forms []Form
 	*processor
 }
 
@@ -64,14 +64,14 @@ func (ff *formfield) Name(name ...string) string {
 }
 
 func (ff *formfield) Get() *Value {
-	return NewValue(ff.forms)
+	return NewValue(ff.Forms)
 }
 
 func (ff *formfield) Set(r *http.Request) {
 	if len(r.PostForm) == 0 {
 		r.ParseForm()
 	}
-	ff.forms = nil
+	ff.Forms = nil
 	index := r.FormValue(ff.Name())
 	i, err := strconv.Atoi(index)
 	if err != nil {
@@ -82,6 +82,6 @@ func (ff *formfield) Set(r *http.Request) {
 		nf := ff.base.New()
 		renameformfields(ff.name, x, nf)
 		nf.Process(r)
-		ff.forms = append(ff.forms, nf)
+		ff.Forms = append(ff.Forms, nf)
 	}
 }

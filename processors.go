@@ -36,7 +36,6 @@ type Widget interface {
 	RenderWith(map[string]interface{}) template.HTML
 }
 
-//{{ define "fielderrors" }}{{ if not .Valid }}{{ else }}{{ end }}{{ end }}
 const defaulttemplate = `
 {{ define "fielderrors" }}<div class="field-errors"><ul>{{ range $x := .Errors }}<li>{{ $x }}</li>{{ end }}</ul></div>{{ end }}
 {{ define "default" }}%s{{ if .Errors }}{{ template "fielderrors" .}}{{end}}{{ end }}

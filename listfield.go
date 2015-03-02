@@ -9,7 +9,7 @@ import (
 )
 
 func listfieldswidget(options ...string) Widget {
-	return NewWidget(fmt.Sprintf(`<fieldset name="{{ .Name }}" %s><ul>{{ range $x := .Get.Raw }}<li>{{ .Render $x }}</li>{{ end }}</ul></fieldset>`, strings.Join(options, " ")))
+	return NewWidget(fmt.Sprintf(`<fieldset name="{{ .Name }}" %s><ul>{{ range $x := .Fields }}<li>{{ .Render $x }}</li>{{ end }}</ul></fieldset>`, strings.Join(options, " ")))
 }
 
 func renamefield(name string, number int, field Field) Field {
@@ -34,7 +34,7 @@ func ListField(name string, startwith int, start Field, options ...string) Field
 	return &listfield{
 		name:      name,
 		base:      start,
-		fields:    renamefields(name, startwith, start),
+		Fields:    renamefields(name, startwith, start),
 		processor: NewProcessor(listfieldswidget(options...), nil, nil),
 	}
 }
@@ -42,7 +42,7 @@ func ListField(name string, startwith int, start Field, options ...string) Field
 type listfield struct {
 	name   string
 	base   Field
-	fields []Field
+	Fields []Field
 	*processor
 }
 
@@ -59,11 +59,11 @@ func (lf *listfield) Name(name ...string) string {
 }
 
 func (lf *listfield) Get() *Value {
-	return NewValue(lf.fields)
+	return NewValue(lf.Fields)
 }
 
 func (lf *listfield) Set(r *http.Request) {
-	lf.fields = nil
+	lf.Fields = nil
 	pl := 0
 	for k, _ := range r.PostForm {
 		if getregexp(lf.name).MatchString(k) {
@@ -75,7 +75,7 @@ func (lf *listfield) Set(r *http.Request) {
 			nf := lf.base.New()
 			renamefield(lf.name, x, nf)
 			nf.Set(r)
-			lf.fields = append(lf.fields, nf)
+			lf.Fields = append(lf.Fields, nf)
 		}
 	}
 }

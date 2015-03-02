@@ -8,24 +8,15 @@ import (
 )
 
 const (
-	dateFormat         = "02/01/2006"
-	defaultdatePattern = `(?:(?:0[1-9]|1[0-2])[\/\\-. ]?(?:0[1-9]|[12][0-9])|(?:(?:0[13-9]|1[0-2])[\/\\-. ]?30)|(?:(?:0[13578]|1[02])[\/\\-. ]?31))[\/\\-. ]?(?:19|20)[0-9]{2}`
+	dateFormat = "02/01/2006"
 )
 
-func datewidget(options ...string) Widget {
-	return NewWidget(fmt.Sprintf(`<input type="date" pattern="%s" title="Date as DD/MM/YYYY" name="{{ .Name }}" value="{{ .Information }}" %s>`, defaultdatePattern, strings.Join(options, " ")))
-}
-
-func TimeField(name string, format string, widget Widget) Field {
+func TimeField(name string, format string, widget Widget, validaters []interface{}, filters []interface{}) Field {
 	return &timefield{
 		name:      name,
 		format:    format,
-		processor: NewProcessor(widget, nil, nil),
+		processor: NewProcessor(widget, validaters, filters),
 	}
-}
-
-func DateField(name string, options ...string) Field {
-	return TimeField(name, dateFormat, datewidget(options...))
 }
 
 type timefield struct {
@@ -54,10 +45,18 @@ func (t *timefield) Get() *Value {
 
 func (t *timefield) Set(req *http.Request) {
 	val := req.FormValue(t.Name())
-	t.Information = val
-	newtime, err := time.Parse(t.format, t.Information)
+	n, err := time.Parse(t.format, val)
 	if err != nil {
-		t.Information = err.Error()
+		t.Errors(fmt.Sprintf("Cannot parse %s in format %s", val, t.format))
 	}
-	t.Data = newtime
+	t.Data, t.Information = n, n.Format(t.format)
+	t.Validate(t)
+}
+
+func datewidget(options ...string) Widget {
+	return NewWidget(fmt.Sprintf(`<input type="date" name="{{ .Name }}" value="{{ .Information }}" %s>`, strings.Join(options, " ")))
+}
+
+func DateField(name string, options ...string) Field {
+	return TimeField(name, dateFormat, datewidget(options...), nil, nil)
 }
