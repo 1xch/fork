@@ -23,3 +23,10 @@ func (v *Value) String() string {
 	}
 	return ""
 }
+
+func (v *Value) Integer() int {
+	if v.Raw != nil {
+		return v.Raw.(int)
+	}
+	return 0
+}

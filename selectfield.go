@@ -31,14 +31,16 @@ func SelectField(name string, s []*Selection, validaters []interface{}, filters 
 }
 
 type selectfield struct {
-	name       string
-	Selections []*Selection
+	name         string
+	Selections   []*Selection
+	validateable bool
 	*processor
 }
 
 func (s *selectfield) New() Field {
 	var newfield selectfield = *s
 	copy(newfield.Selections, s.Selections)
+	s.validateable = false
 	return &newfield
 }
 
@@ -66,17 +68,24 @@ func (s *selectfield) Set(req *http.Request) {
 	for _, v := range val {
 		setselection(v, s.Selections)
 	}
+	s.validateable = true
+}
+
+func (s *selectfield) Validateable() bool {
+	return s.validateable
 }
 
 type radiofield struct {
-	name       string
-	Selections []Field
+	name         string
+	Selections   []Field
+	validateable bool
 	*processor
 }
 
 func (r *radiofield) New() Field {
 	var newfield radiofield = *r
 	copy(newfield.Selections, r.Selections)
+	r.validateable = false
 	return &newfield
 }
 
@@ -95,6 +104,11 @@ func (r *radiofield) Set(req *http.Request) {
 	for _, s := range r.Selections {
 		s.Set(req)
 	}
+	r.validateable = true
+}
+
+func (r *radiofield) Validateable() bool {
+	return r.validateable
 }
 
 func radiowidget(name string, legend string, options ...string) Widget {

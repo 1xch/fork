@@ -40,14 +40,16 @@ func ListField(name string, startwith int, start Field, options ...string) Field
 }
 
 type listfield struct {
-	name   string
-	base   Field
-	Fields []Field
+	name         string
+	base         Field
+	Fields       []Field
+	validateable bool
 	*processor
 }
 
 func (lf *listfield) New() Field {
 	var newfield listfield = *lf
+	lf.validateable = false
 	return &newfield
 }
 
@@ -78,4 +80,9 @@ func (lf *listfield) Set(r *http.Request) {
 			lf.Fields = append(lf.Fields, nf)
 		}
 	}
+	lf.validateable = true
+}
+
+func (lf *listfield) Validateable() bool {
+	return lf.validateable
 }

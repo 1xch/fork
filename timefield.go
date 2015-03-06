@@ -13,22 +13,27 @@ const (
 
 func TimeField(name string, format string, widget Widget, validaters []interface{}, filters []interface{}) Field {
 	return &timefield{
-		name:      name,
-		format:    format,
-		processor: NewProcessor(widget, validaters, filters),
+		name:   name,
+		format: format,
+		processor: NewProcessor(
+			widget,
+			append(validaters, ValidateTime),
+			append(filters, NewFilterTime(format)),
+		),
 	}
 }
 
 type timefield struct {
-	name        string
-	format      string
-	Data        time.Time
-	Information string
+	name         string
+	format       string
+	Data         string
+	validateable bool
 	*processor
 }
 
 func (t *timefield) New() Field {
 	var newfield timefield = *t
+	t.validateable = false
 	return &newfield
 }
 
@@ -43,18 +48,38 @@ func (t *timefield) Get() *Value {
 	return NewValue(t.Data)
 }
 
-func (t *timefield) Set(req *http.Request) {
-	val := req.FormValue(t.Name())
-	n, err := time.Parse(t.format, val)
-	if err != nil {
-		t.Errors(fmt.Sprintf("Cannot parse %s in format %s", val, t.format))
+func (t *timefield) Set(r *http.Request) {
+	v := t.Filter(t.Name(), r)
+	t.Data = v.String()
+	t.validateable = true
+}
+
+func (t *timefield) Validateable() bool {
+	return t.validateable
+}
+
+func NewFilterTime(format string) func(string) string {
+	return func(t string) string {
+		n, err := time.Parse(format, t)
+		if err == nil {
+			return n.Format(format)
+		}
+		return t
 	}
-	t.Data, t.Information = n, n.Format(t.format)
-	t.Validate(t)
+}
+
+func ValidateTime(t *timefield) error {
+	if t.validateable {
+		_, err := time.Parse(t.format, t.Data)
+		if err != nil {
+			return fmt.Errorf("Cannot parse %s in format %s", t.Data, t.format)
+		}
+	}
+	return nil
 }
 
 func datewidget(options ...string) Widget {
-	return NewWidget(fmt.Sprintf(`<input type="date" name="{{ .Name }}" value="{{ .Information }}" %s>`, strings.Join(options, " ")))
+	return NewWidget(fmt.Sprintf(`<input type="date" name="{{ .Name }}" value="{{ .Data }}" %s>`, strings.Join(options, " ")))
 }
 
 func DateField(name string, options ...string) Field {

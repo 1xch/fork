@@ -16,7 +16,8 @@ type Former interface {
 	Process(*http.Request)
 	String() string
 	Render() template.HTML
-	Validater
+	Valid() bool
+	Errors() []string
 }
 
 func NewForm(fs ...Field) Form {
@@ -25,7 +26,6 @@ func NewForm(fs ...Field) Form {
 
 type form struct {
 	fields []Field
-	Validater
 }
 
 func (f *form) New() Form {
@@ -44,22 +44,12 @@ func (f *form) Fields(fs ...Field) []Field {
 }
 
 func (f *form) Process(r *http.Request) {
+	if len(r.PostForm) == 0 {
+		r.ParseForm()
+	}
 	for _, fd := range f.Fields() {
 		fd.Set(r)
 	}
-}
-
-func (f *form) Valid() bool {
-	for _, fd := range f.Fields() {
-		if !fd.Valid() {
-			return false
-		}
-	}
-	return true
-}
-
-func (f *form) Validate(fd Field) error {
-	return fd.Validate(fd)
 }
 
 func (f *form) String() string {
@@ -72,4 +62,21 @@ func (f *form) String() string {
 
 func (f *form) Render() template.HTML {
 	return template.HTML(f.String())
+}
+
+func (f *form) Valid() bool {
+	for _, fd := range f.Fields() {
+		if !fd.Valid(fd) {
+			return false
+		}
+	}
+	return true
+}
+
+func (f *form) Errors() []string {
+	var ret []string
+	for _, fd := range f.Fields() {
+		ret = append(ret, fd.Errors(fd)...)
+	}
+	return ret
 }

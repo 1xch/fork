@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
+	"net/http"
 	"reflect"
 )
 
@@ -11,12 +12,10 @@ type Processor interface {
 	Widget
 	Validater
 	Filterer
-	Errorer
 }
 
 type processor struct {
 	Widget
-	Errorer
 	Validater
 	Filterer
 }
@@ -24,7 +23,6 @@ type processor struct {
 func NewProcessor(w Widget, validaters []interface{}, filters []interface{}) *processor {
 	return &processor{
 		Widget:    w,
-		Errorer:   NewErrorer(),
 		Validater: NewValidater(validaters...),
 		Filterer:  NewFilterer(filters...),
 	}
@@ -37,8 +35,8 @@ type Widget interface {
 }
 
 const defaulttemplate = `
-{{ define "fielderrors" }}<div class="field-errors"><ul>{{ range $x := .Errors }}<li>{{ $x }}</li>{{ end }}</ul></div>{{ end }}
-{{ define "default" }}%s{{ if .Errors }}{{ template "fielderrors" .}}{{end}}{{ end }}
+{{ define "fielderrors" }}<div class="field-errors"><ul>{{ range $x := .Errors . }}<li>{{ $x }}</li>{{ end }}</ul></div>{{ end }}
+{{ define "default" }}%s{{ if .Error .}}{{ template "fielderrors" .}}{{end}}{{ end }}
 `
 
 func NewWidget(t string) Widget {
@@ -74,25 +72,10 @@ func (w *widget) RenderWith(m map[string]interface{}) template.HTML {
 	return template.HTML(w.String(m))
 }
 
-type Errorer interface {
-	Errors(...string) []string
-}
-
-func NewErrorer() Errorer {
-	return &errorer{}
-}
-
-type errorer struct {
-	errors []string
-}
-
-func (e *errorer) Errors(ers ...string) []string {
-	e.errors = append(e.errors, ers...)
-	return e.errors
-}
-
 type Validater interface {
-	Valid() bool
+	Error(Field) bool
+	Errors(Field) []string
+	Valid(Field) bool
 	Validate(Field) error
 }
 
@@ -101,27 +84,39 @@ func NewValidater(v ...interface{}) Validater {
 }
 
 type validater struct {
-	valid      bool
-	validated  bool
 	validaters []reflect.Value
 }
 
-func (v *validater) Valid() bool {
-	if !v.validated {
-		return true
+func (v *validater) Error(f Field) bool {
+	return !v.Valid(f)
+}
+
+func (v *validater) Errors(f Field) []string {
+	var ret []string
+	for _, vdr := range v.validaters {
+		err := Validate(vdr, f)
+		if err != nil {
+			ret = append(ret, err.Error())
+		}
 	}
-	return v.valid
+	return ret
+}
+
+func (v *validater) Valid(f Field) bool {
+	err := v.Validate(f)
+	if err != nil {
+		return false
+	}
+	return true
 }
 
 func (v *validater) Validate(f Field) error {
 	for _, vdr := range v.validaters {
 		err := Validate(vdr, f)
 		if err != nil {
-			v.validated, v.valid = true, false
+			return err
 		}
-		return err
 	}
-	v.validated, v.valid = true, true
 	return nil
 }
 
@@ -138,7 +133,7 @@ func reflectValidaters(fns ...interface{}) []reflect.Value {
 }
 
 type Filterer interface {
-	Filter(Field)
+	Filter(string, *http.Request) *Value
 }
 
 func NewFilterer(f ...interface{}) Filterer {
@@ -149,10 +144,16 @@ type filterer struct {
 	filters []reflect.Value
 }
 
-func (fr *filterer) Filter(fd Field) {
+func (fr *filterer) Filter(k string, r *http.Request) *Value {
+	var v interface{}
+	v = r.FormValue(k)
 	for _, fn := range fr.filters {
-		_ = Filter(fn, fd)
+		v = Filter(fn, v)
 	}
+	if v != nil {
+		return NewValue(v)
+	}
+	return NewValue(nil)
 }
 
 func (fr *filterer) AddFilter(fn interface{}) {
@@ -253,7 +254,6 @@ func call(fn reflect.Value, args ...interface{}) (interface{}, error) {
 	argv := make([]reflect.Value, len(args))
 	for i, arg := range args {
 		value := reflect.ValueOf(arg)
-		// Compute the expected type. Clumsy because of variadics.
 		var argType reflect.Type
 		if !typ.IsVariadic() || i < numIn-1 {
 			argType = typ.In(i)

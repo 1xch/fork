@@ -13,9 +13,12 @@ func textwidget(options ...string) Widget {
 
 func newtextfield(name string, widget Widget, validaters []interface{}, filters []interface{}) Field {
 	return &textfield{
-		name:      name,
-		Text:      "",
-		processor: NewProcessor(widget, validaters, filters),
+		name: name,
+		Text: "",
+		processor: NewProcessor(widget,
+			validaters,
+			filters,
+		),
 	}
 }
 
@@ -24,13 +27,15 @@ func TextField(name string, validaters []interface{}, filters []interface{}, opt
 }
 
 type textfield struct {
-	name string
-	Text string
+	name         string
+	Text         string
+	validateable bool
 	*processor
 }
 
 func (t *textfield) New() Field {
 	var newfield textfield = *t
+	t.validateable = false
 	return &newfield
 }
 
@@ -46,12 +51,13 @@ func (t *textfield) Get() *Value {
 }
 
 func (t *textfield) Set(r *http.Request) {
-	val := r.FormValue(t.Name())
-	t.Text = val
-	err := t.Validate(t)
-	if err != nil {
-		t.Errors(err.Error())
-	}
+	v := t.Filter(t.Name(), r)
+	t.Text = v.String()
+	t.validateable = true
+}
+
+func (t *textfield) Validateable() bool {
+	return t.validateable
 }
 
 func textareawidget(options ...string) Widget {
@@ -83,22 +89,23 @@ func emailwidget(options ...string) Widget {
 }
 
 func EmailField(name string, validaters []interface{}, filters []interface{}, options ...string) Field {
-	return &textfield{
-		name: name,
-		Text: "",
-		processor: NewProcessor(
-			emailwidget(options...),
-			append(validaters, ValidateEmail),
-			filters,
-		),
-	}
+	return newtextfield(name, emailwidget(options...), append(validaters, ValidateEmail), nil)
 }
 
-func ValidateEmail(f Field) error {
-	a := f.Get()
-	_, err := mail.ParseAddress(a.String())
-	if err != nil {
-		return fmt.Errorf("Invalid email address: %s", err.Error())
+func ValidateEmail(t *textfield) error {
+	if t.validateable {
+		_, err := mail.ParseAddress(t.Text)
+		if err != nil {
+			return fmt.Errorf("Invalid email address: %s", err.Error())
+		}
 	}
 	return nil
 }
+
+//func TextRequired(f Field) error {
+//	a := f.Get()
+//	if a.String() == "" {
+//		return fmt.Errorf("%s is required.", f.Name())
+//	}
+//	return nil
+//}

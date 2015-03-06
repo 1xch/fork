@@ -15,8 +15,9 @@ func BooleanField(name string, label string, start bool, options ...string) Fiel
 }
 
 type booleanfield struct {
-	name      string
-	Selection *Selection
+	name         string
+	Selection    *Selection
+	validateable bool
 	*processor
 }
 
@@ -24,6 +25,7 @@ func (b *booleanfield) New() Field {
 	var newfield booleanfield = *b
 	var newselection Selection = *b.Selection
 	newfield.Selection = &newselection
+	b.validateable = false
 	return &newfield
 }
 
@@ -38,17 +40,18 @@ func (b *booleanfield) Get() *Value {
 	return NewValue(b.Selection)
 }
 
-func (b *booleanfield) Set(req *http.Request) {
-	val := req.FormValue(b.Name())
-	if val == b.Selection.Value {
+func (b *booleanfield) Set(r *http.Request) {
+	v := b.Filter(b.Name(), r)
+	if v.String() == b.Selection.Value {
 		b.Selection.Set = true
 	} else {
 		b.Selection.Set = false
 	}
-	err := b.Validate(b)
-	if err != nil {
-		b.Errors(err.Error())
-	}
+	b.validateable = true
+}
+
+func (b *booleanfield) Validateable() bool {
+	return b.validateable
 }
 
 func togglewidget(input string, options ...string) Widget {

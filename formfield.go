@@ -8,7 +8,7 @@ import (
 )
 
 func formfieldwidget(name string) Widget {
-	lfw := fmt.Sprintf(`<fieldset name="%s"><input type="hidden" name="%s" value="{{ .Index }}"><ul>{{ range $x := .Forms }}<li>{{ .Render }}</li>{{ end }}</ul></fieldset>`, name, name)
+	lfw := fmt.Sprintf(`<fieldset name="%s"><input type="hidden" name="%s" value="{{ .Index.N }}"><ul>{{ range $x := .Forms }}<li>{{ .Render }}</li>{{ end }}</ul></fieldset>`, name, name)
 	return NewWidget(lfw)
 }
 
@@ -35,24 +35,39 @@ func FormField(name string, f Form) Field {
 
 func FormsField(name string, startwith int, start Form) Field {
 	return &formfield{
-		name:      name,
-		base:      start,
-		Index:     startwith,
-		Forms:     addform(name, startwith, start),
-		processor: NewProcessor(formfieldwidget(name), nil, nil),
+		name:  name,
+		base:  start,
+		Index: NewFieldIndex(strconv.Itoa(startwith), startwith),
+		Forms: addform(name, startwith, start),
+		processor: NewProcessor(
+			formfieldwidget(name),
+			[]interface{}{ValidateIndex},
+			[]interface{}{FilterIndex},
+		),
 	}
 }
 
+func NewFieldIndex(s string, i int) *FieldIndex {
+	return &FieldIndex{N: s, I: i}
+}
+
+type FieldIndex struct {
+	I int
+	N string
+}
+
 type formfield struct {
-	name  string
-	base  Form
-	Index int
-	Forms []Form
+	name         string
+	base         Form
+	Index        *FieldIndex
+	Forms        []Form
+	validateable bool
 	*processor
 }
 
 func (ff *formfield) New() Field {
 	var newfield formfield = *ff
+	ff.validateable = false
 	return &newfield
 }
 
@@ -68,20 +83,31 @@ func (ff *formfield) Get() *Value {
 }
 
 func (ff *formfield) Set(r *http.Request) {
-	if len(r.PostForm) == 0 {
-		r.ParseForm()
-	}
 	ff.Forms = nil
-	index := r.FormValue(ff.Name())
-	i, err := strconv.Atoi(index)
-	if err != nil {
-		ff.Errors("form field index error: %s", err.Error())
-	}
-	ff.Index = i
-	for x := 0; x < ff.Index; x++ {
+	i := ff.Filter(ff.Name(), r)
+	ff.Index = i.Raw.(*FieldIndex)
+	for x := 0; x < ff.Index.I; x++ {
 		nf := ff.base.New()
 		renameformfields(ff.name, x, nf)
 		nf.Process(r)
 		ff.Forms = append(ff.Forms, nf)
 	}
+	ff.validateable = true
+}
+
+func (ff *formfield) Validateable() bool {
+	return ff.validateable
+}
+
+func FilterIndex(index string) *FieldIndex {
+	i, _ := strconv.Atoi(index)
+	return NewFieldIndex(index, i)
+}
+
+func ValidateIndex(ff *formfield) error {
+	_, err := strconv.Atoi(ff.Index.N)
+	if err != nil {
+		return fmt.Errorf("form field index error: %s", err.Error())
+	}
+	return nil
 }

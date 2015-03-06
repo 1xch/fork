@@ -10,6 +10,7 @@ type Field interface {
 type Fielder interface {
 	Name(...string) string
 	Get() *Value
-	Set(r *http.Request)
+	Set(*http.Request)
+	Validateable() bool
 	Processor
 }

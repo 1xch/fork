@@ -8,14 +8,15 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 )
 
 func formstring(note string, f Form) *bytes.Buffer {
-	out := bytes.NewBuffer([]byte(fmt.Sprintf("begin: %s", note)))
+	out := bytes.NewBuffer([]byte(fmt.Sprintf("%s\n", note)))
 	out.WriteString(`<form action="/" method="POST">`)
 	out.WriteString(f.String())
 	out.WriteString("</form>")
-	out.WriteString(fmt.Sprintf("end: %s", note))
+	//out.WriteString(fmt.Sprintf("end: %s", note))
 	return out
 }
 
@@ -90,11 +91,11 @@ func testbasic(t *testing.T, name string, f Form, postprovides string, GETexpect
 	}
 
 	if !strings.Contains(w1.Body.String(), GETexpects) {
-		t.Errorf("\n%s GET Error\ngot\n\n%s\nshould contain:\n\n%s\n\n", name, w1.Body, GETexpects)
+		t.Errorf("\n---\n%s GET Error\nhave:\n---\n%s\n\nexpected:\n---\n%s\n---\n", name, w1.Body, GETexpects)
 	}
 
 	if !strings.Contains(w2.Body.String(), POSTexpects) {
-		t.Errorf("\n%s POST Error\ngot %s\nshould contain %s\n\n", name, w2.Body, POSTexpects)
+		t.Errorf("\n---\n%s POST Error\nhave:\n---\n%s\n\nexpected:\n---\n%s\n---\n", name, w2.Body, POSTexpects)
 	}
 }
 
@@ -108,6 +109,19 @@ func TestTextField(t *testing.T) {
 		`<input type="text" name="text" value="TEXT" >`,
 	)
 }
+
+//func TestTextRequired(t *testing.T) {
+//	tf := TextField("Required", []interface{}{TextRequired}, nil)
+//
+//	testbasic(
+//		t,
+//		"RequiredValidater",
+//		NewForm(tf),
+//		``,
+//		`<input type="text" name="Required" value="" >`,
+//		`<input type="text" name="Required" value="" ><div class="field-errors"><ul><li>Required is required.</li></ul></div>`,
+//	)
+//}
 
 func TestTextAreaField(t *testing.T) {
 	testbasic(
@@ -247,7 +261,7 @@ func TestDateField(t *testing.T) {
 		NewForm(DateField("datefield")),
 		`datefield=26022015`,
 		`<input type="date" name="datefield" value="" >`,
-		`<input type="date" name="datefield" value="01/01/0001" ><div class="field-errors"><ul><li>Cannot parse 26022015 in format 02/01/2006</li></ul></div>`,
+		`<input type="date" name="datefield" value="26022015" ><div class="field-errors"><ul><li>Cannot parse 26022015 in format 02/01/2006</li></ul></div>`,
 	)
 }
 
@@ -279,4 +293,65 @@ func TestFormsField(t *testing.T) {
 		`<fieldset name="formfield"><input type="hidden" name="formfield" value="1"><ul><li><input type="text" name="formfield-0-fftext-0" value="" ><input type="checkbox" name="formfield-0-yes-1" value="yes" >Yes</li></ul></fieldset>`,
 		`<fieldset name="formfield"><input type="hidden" name="formfield" value="2"><ul><li><input type="text" name="formfield-0-fftext-0" value="TEXTFIELD0" ><input type="checkbox" name="formfield-0-yes-1" value="yes" checked >Yes</li><li><input type="text" name="formfield-1-fftext-0" value="TEXTFIELD1" ><input type="checkbox" name="formfield-1-yes-1" value="yes" >Yes</li></ul></fieldset>`,
 	)
+}
+
+func extracttoken(from *httptest.ResponseRecorder, by string) string {
+	b := bytes.Fields(from.Body.Bytes())
+
+	for _, x := range b {
+		if bytes.Contains(x, []byte(by)) {
+			return strings.Split(string(x), `"`)[1]
+		}
+	}
+
+	return ""
+}
+
+func TestXSRF(t *testing.T) {
+	field := XSRF("testXSRF", "SECRET")
+	xsrffield, _ := field.(*xsrf)
+
+	f := NewForm(field)
+
+	ts := testserve()
+	ts.handlers["GET"] = getformhandlerfor(f)
+	ts.handlers["POST"] = postformhandlerfor(f)
+
+	w1 := PerformGet(ts)
+
+	expect := `<input type="hidden" name="testXSRF" value="`
+
+	if !strings.Contains(w1.Body.String(), expect) {
+		t.Errorf("\n%s XSRF GET Error\ngot\n\n%s\nshould contain:\n\n%s\n\n", w1.Body, expect)
+	}
+
+	token := extracttoken(w1, "value=")
+
+	if !validTokenAtTime(token, xsrffield.Secret, xsrffield.Key, time.Now()) {
+		t.Errorf("\nInvlaid xsrf token: %s\n", token)
+	}
+
+	sendtoken := fmt.Sprintf(`testXSRF=%s`, token)
+
+	w2 := PerformPost(ts, sendtoken)
+
+	posttoken := extracttoken(w2, "value=")
+
+	if posttoken == token {
+		t.Errorf("\n %s == %s ; Indicative of an invalid token\n", token, posttoken)
+	}
+
+	w3 := PerformPost(ts, `testXSRF=invalidtoken`)
+
+	invalidtoken := extracttoken(w3, "value=")
+
+	if invalidtoken != "invalidtoken" {
+		t.Errorf(`\nInvalid token should be "invalidtoken", not %s\n`, invalidtoken)
+	}
+
+	var invalidresult string = `<input type="hidden" name="testXSRF" value="invalidtoken" ><div class="field-errors"><ul><li>Invalid XSRF Token</li></ul></div>`
+
+	if !strings.Contains(w3.Body.String(), invalidresult) {
+		t.Errorf("\n%s POST Error\ngot %s\nshould contain %s\n\n", w3, invalidresult)
+	}
 }
