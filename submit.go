@@ -18,7 +18,7 @@ func SubmitField(name string, validaters []interface{}, filters []interface{}, o
 }
 
 func submitwidget(options ...string) Widget {
-	return NewWidget(fmt.Sprintf(`<input type="submit" value="{{ .Name }}" %s>`, strings.Join(options, " ")))
+	return NewWidget(fmt.Sprintf(`<input type="submit" name="{{ .Name }}" value="{{ .Name }}" %s>`, strings.Join(options, " ")))
 }
 
 type submitfield struct {
@@ -45,6 +45,7 @@ func (s *submitfield) Get() *Value {
 }
 
 func (s *submitfield) Set(r *http.Request) {
+	s.Filter(s.Name(), r)
 	s.validateable = true
 }
 

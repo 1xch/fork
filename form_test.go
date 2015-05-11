@@ -361,7 +361,7 @@ func TestSubmitField(t *testing.T) {
 		"SubmitField",
 		NewForm(SubmitField("test", nil, nil)),
 		``,
-		`<form action="/" method="POST"><input type="submit" value="test" ></form>`,
-		`<form action="/" method="POST"><input type="submit" value="test" ></form>`,
+		`<form action="/" method="POST"><input type="submit" name="test" value="test" ></form>`,
+		`<form action="/" method="POST"><input type="submit" name="test" value="test" ></form>`,
 	)
 }
