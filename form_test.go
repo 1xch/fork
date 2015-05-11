@@ -16,7 +16,6 @@ func formstring(note string, f Form) *bytes.Buffer {
 	out.WriteString(`<form action="/" method="POST">`)
 	out.WriteString(f.String())
 	out.WriteString("</form>")
-	//out.WriteString(fmt.Sprintf("end: %s", note))
 	return out
 }
 
@@ -354,4 +353,15 @@ func TestXSRF(t *testing.T) {
 	if !strings.Contains(w3.Body.String(), invalidresult) {
 		t.Errorf("\n%s POST Error\ngot %s\nshould contain %s\n\n", w3, invalidresult)
 	}
+}
+
+func TestSubmitField(t *testing.T) {
+	testbasic(
+		t,
+		"SubmitField",
+		NewForm(SubmitField("test", nil, nil)),
+		``,
+		`<form action="/" method="POST"><input type="submit" value="test" ></form>`,
+		`<form action="/" method="POST"><input type="submit" value="test" ></form>`,
+	)
 }

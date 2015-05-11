@@ -89,10 +89,10 @@ func emailwidget(options ...string) Widget {
 }
 
 func EmailField(name string, validaters []interface{}, filters []interface{}, options ...string) Field {
-	return newtextfield(name, emailwidget(options...), append(validaters, ValidateEmail), nil)
+	return newtextfield(name, emailwidget(options...), append(validaters, ValidEmail), nil)
 }
 
-func ValidateEmail(t *textfield) error {
+func ValidEmail(t *textfield) error {
 	if t.validateable {
 		_, err := mail.ParseAddress(t.Text)
 		if err != nil {
@@ -101,11 +101,3 @@ func ValidateEmail(t *textfield) error {
 	}
 	return nil
 }
-
-//func TextRequired(f Field) error {
-//	a := f.Get()
-//	if a.String() == "" {
-//		return fmt.Errorf("%s is required.", f.Name())
-//	}
-//	return nil
-//}
