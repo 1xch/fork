@@ -38,7 +38,7 @@ type Widget interface {
 
 const defaulttemplate = `
 {{ define "fielderrors" }}<div class="field-errors"><ul>{{ range $x := .Errors . }}<li>{{ $x }}</li>{{ end }}</ul></div>{{ end }}
-{{ define "default" }}%s{{ if .Error .}}{{ template "fielderrors" .}}{{end}}{{ end }}
+{{ define "default" }}%s{{ if .Error .}}{{ template "fielderrors" .}}{{ end }}{{ end }}
 `
 
 func WithOptions(base string, options ...string) string {
