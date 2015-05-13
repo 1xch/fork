@@ -79,7 +79,7 @@ func ValidateTime(t *timefield) error {
 }
 
 func datewidget(options ...string) Widget {
-	return NewWidget(fmt.Sprintf(`<input type="date" name="{{ .Name }}" value="{{ .Data }}" %s>`, strings.Join(options, " ")))
+	return NewWidget(WithOptions(`<input type="date" name="{{ .Name }}" value="{{ .Data }}" %s>`, options...))
 }
 
 func DateField(name string, options ...string) Field {

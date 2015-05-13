@@ -14,6 +14,7 @@ type Form interface {
 type Former interface {
 	Fields(...Field) []Field
 	Process(*http.Request)
+	Buffer() *bytes.Buffer
 	String() string
 	Render() template.HTML
 	Valid() bool
@@ -52,12 +53,19 @@ func (f *form) Process(r *http.Request) {
 	}
 }
 
-func (f *form) String() string {
+func (f *form) Buffer() *bytes.Buffer {
 	b := new(bytes.Buffer)
 	for _, fd := range f.Fields() {
-		_, _ = b.WriteString(fd.String(fd))
+		fb, err := fd.Bytes(fd)
+		if err == nil {
+			b.ReadFrom(fb)
+		}
 	}
-	return b.String()
+	return b
+}
+
+func (f *form) String() string {
+	return f.Buffer().String()
 }
 
 func (f *form) Render() template.HTML {

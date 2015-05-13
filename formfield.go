@@ -8,8 +8,8 @@ import (
 )
 
 func formfieldwidget(name string) Widget {
-	lfw := fmt.Sprintf(`<fieldset name="%s"><input type="hidden" name="%s" value="{{ .Index.N }}"><ul>{{ range $x := .Forms }}<li>{{ .Render }}</li>{{ end }}</ul></fieldset>`, name, name)
-	return NewWidget(lfw)
+	in := fmt.Sprintf(`<fieldset name="%s"><input type="hidden" name="%s" value="{{ .Index.N }}"><ul>{{ range $x := .Forms }}<li>{{ .Render }}</li>{{ end }}</ul></fieldset>`, name, name)
+	return NewWidget(in)
 }
 
 func renameformfields(name string, number int, f Form) Form {

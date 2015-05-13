@@ -1,7 +1,6 @@
 package fork
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 )
@@ -18,7 +17,7 @@ func SubmitField(name string, validaters []interface{}, filters []interface{}, o
 }
 
 func submitwidget(options ...string) Widget {
-	return NewWidget(fmt.Sprintf(`<input type="submit" name="{{ .Name }}" value="{{ .Name }}" %s>`, strings.Join(options, " ")))
+	return NewWidget(WithOptions(`<input type="submit" name="{{ .Name }}" value="{{ .Name }}" %s>`, options...))
 }
 
 type submitfield struct {

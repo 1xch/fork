@@ -11,11 +11,14 @@ import (
 	"time"
 )
 
-func formstring(note string, f Form) *bytes.Buffer {
+var formhead = []byte(`<form action="/" method="POST">`)
+var formtail = []byte(`</form>`)
+
+func formbuffer(note string, f Form) *bytes.Buffer {
 	out := bytes.NewBuffer([]byte(fmt.Sprintf("%s\n", note)))
-	out.WriteString(`<form action="/" method="POST">`)
-	out.WriteString(f.String())
-	out.WriteString("</form>")
+	out.Write(formhead)
+	out.ReadFrom(f.Buffer())
+	out.Write(formtail)
 	return out
 }
 
@@ -67,7 +70,7 @@ func getformhandlerfor(f Form) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
 		t := f.New()
-		out := formstring(`form via GET`, t)
+		out := formbuffer(`form via GET`, t)
 		w.Write(out.Bytes())
 	}
 }
@@ -77,7 +80,7 @@ func postformhandlerfor(f Form) func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
 		t := f.New()
 		t.Process(r)
-		out := formstring(`form via POST`, t)
+		out := formbuffer(`form via POST`, t)
 		w.Write(out.Bytes())
 	}
 }
@@ -108,19 +111,6 @@ func TestTextField(t *testing.T) {
 		`<input type="text" name="text" value="TEXT" >`,
 	)
 }
-
-//func TestTextRequired(t *testing.T) {
-//	tf := TextField("Required", []interface{}{TextRequired}, nil)
-//
-//	testbasic(
-//		t,
-//		"RequiredValidater",
-//		NewForm(tf),
-//		``,
-//		`<input type="text" name="Required" value="" >`,
-//		`<input type="text" name="Required" value="" ><div class="field-errors"><ul><li>Required is required.</li></ul></div>`,
-//	)
-//}
 
 func TestTextAreaField(t *testing.T) {
 	testbasic(

@@ -8,7 +8,7 @@ import (
 )
 
 func textwidget(options ...string) Widget {
-	return NewWidget(fmt.Sprintf(`<input type="text" name="{{ .Name }}" value="{{ .Text }}" %s>`, strings.Join(options, " ")))
+	return NewWidget(WithOptions(`<input type="text" name="{{ .Name }}" value="{{ .Text }}" %s>`, options...))
 }
 
 func newtextfield(name string, widget Widget, validaters []interface{}, filters []interface{}) Field {
@@ -61,7 +61,7 @@ func (t *textfield) Validateable() bool {
 }
 
 func textareawidget(options ...string) Widget {
-	return NewWidget(fmt.Sprintf(`<textarea name="{{ .Name }}" %s>{{ .Text }}</textarea>`, strings.Join(options, " ")))
+	return NewWidget(WithOptions(`<textarea name="{{ .Name }}" %s>{{ .Text }}</textarea>`, options...))
 }
 
 func TextAreaField(name string, validaters []interface{}, filters []interface{}, options ...string) Field {
@@ -69,7 +69,7 @@ func TextAreaField(name string, validaters []interface{}, filters []interface{},
 }
 
 func hiddenwidget(options ...string) Widget {
-	return NewWidget(fmt.Sprintf(`<input type="hidden" name="{{ .Name }}" value="{{ .Text }}" %s>`, strings.Join(options, " ")))
+	return NewWidget(WithOptions(`<input type="hidden" name="{{ .Name }}" value="{{ .Text }}" %s>`, options...))
 }
 
 func HiddenField(name string, validaters []interface{}, filters []interface{}, options ...string) Field {
@@ -77,7 +77,7 @@ func HiddenField(name string, validaters []interface{}, filters []interface{}, o
 }
 
 func passwordwidget(options ...string) Widget {
-	return NewWidget(fmt.Sprintf(`<input type="password" name="{{ .Name }}" value="{{ .Text }}" %s>`, strings.Join(options, " ")))
+	return NewWidget(WithOptions(`<input type="password" name="{{ .Name }}" value="{{ .Text }}" %s>`, options...))
 }
 
 func PassWordField(name string, validaters []interface{}, filters []interface{}, options ...string) Field {
@@ -85,7 +85,7 @@ func PassWordField(name string, validaters []interface{}, filters []interface{},
 }
 
 func emailwidget(options ...string) Widget {
-	return NewWidget(fmt.Sprintf(`<input type="email" name="{{ .Name }}" value="{{ .Text }}" %s>`, strings.Join(options, " ")))
+	return NewWidget(WithOptions(`<input type="email" name="{{ .Name }}" value="{{ .Text }}" %s>`, options...))
 }
 
 func EmailField(name string, validaters []interface{}, filters []interface{}, options ...string) Field {

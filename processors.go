@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"net/http"
 	"reflect"
+	"strings"
 )
 
 type Processor interface {
@@ -29,6 +30,7 @@ func NewProcessor(w Widget, validaters []interface{}, filters []interface{}) *pr
 }
 
 type Widget interface {
+	Bytes(interface{}) (*bytes.Buffer, error)
 	String(interface{}) string
 	Render(Field) template.HTML
 	RenderWith(map[string]interface{}) template.HTML
@@ -38,6 +40,10 @@ const defaulttemplate = `
 {{ define "fielderrors" }}<div class="field-errors"><ul>{{ range $x := .Errors . }}<li>{{ $x }}</li>{{ end }}</ul></div>{{ end }}
 {{ define "default" }}%s{{ if .Error .}}{{ template "fielderrors" .}}{{end}}{{ end }}
 `
+
+func WithOptions(base string, options ...string) string {
+	return fmt.Sprintf(base, strings.Join(options, " "))
+}
 
 func NewWidget(t string) Widget {
 	var err error
@@ -55,11 +61,19 @@ type widget struct {
 	widget *template.Template
 }
 
-func (w *widget) String(i interface{}) string {
+func (w *widget) Bytes(i interface{}) (*bytes.Buffer, error) {
 	var buffer bytes.Buffer
 	err := w.widget.ExecuteTemplate(&buffer, w.name, i)
+	if err != nil {
+		return &buffer, err
+	}
+	return &buffer, nil
+}
+
+func (w *widget) String(i interface{}) string {
+	b, err := w.Bytes(i)
 	if err == nil {
-		return buffer.String()
+		return b.String()
 	}
 	return err.Error()
 }

@@ -55,7 +55,11 @@ func (b *booleanfield) Validateable() bool {
 }
 
 func togglewidget(input string, options ...string) Widget {
-	return NewWidget(fmt.Sprintf(`<input type="%s" name="{{ .Name }}" value="{{ .Selection.Value }}"{{ if .Selection.Set }} checked{{ end }} %s>{{ .Selection.Label }}`, input, strings.Join(options, " ")))
+	in := strings.Join([]string{
+		fmt.Sprintf(`<input type="%s" `, input),
+		`name="{{ .Name }}" value="{{ .Selection.Value }}"{{ if .Selection.Set }} checked{{ end }} %s>{{ .Selection.Label }}`,
+	}, "")
+	return NewWidget(WithOptions(in, options...))
 }
 
 func ToggleInput(name string, label string, value string, widget Widget, checked bool) Field {

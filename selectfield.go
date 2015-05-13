@@ -19,7 +19,7 @@ func NewSelection(value string, label string, set bool) *Selection {
 var selectbase string = `<select name="{{ .Name }}" %s>{{ range $x := .Selections }}<option value="{{ $x.Value }}"{{ if $x.Set }} selected{{ end }}>{{ $x.Label}}</option>{{ end }}</select>`
 
 func selectwidget(options ...string) Widget {
-	return NewWidget(fmt.Sprintf(selectbase, strings.Join(options, " ")))
+	return NewWidget(WithOptions(selectbase, options...))
 }
 
 func SelectField(name string, s []*Selection, validaters []interface{}, filters []interface{}, options ...string) Field {
@@ -112,7 +112,13 @@ func (r *radiofield) Validateable() bool {
 }
 
 func radiowidget(name string, legend string, options ...string) Widget {
-	return NewWidget(fmt.Sprintf(`<fieldset name="%s" %s><legend>%s</legend><ul>{{ range $x := .Selections }}<li>{{ .Render $x }}</li>{{ end }}</ul></fieldset>`, name, strings.Join(options, " "), legend))
+	in := strings.Join([]string{
+		fmt.Sprintf(`<fieldset name="%s" `, name),
+		`%s>`,
+		fmt.Sprintf(`<legend>%s</legend>`, legend),
+		`<ul>{{ range $x := .Selections }}<li>{{ .Render $x }}</li>{{ end }}</ul></fieldset>`,
+	}, "")
+	return NewWidget(WithOptions(in, options...))
 }
 
 func makeradioinputs(name string, selections []*Selection) []Field {

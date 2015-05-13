@@ -9,7 +9,7 @@ import (
 )
 
 func listfieldswidget(options ...string) Widget {
-	return NewWidget(fmt.Sprintf(`<fieldset name="{{ .Name }}" %s><ul>{{ range $x := .Fields }}<li>{{ .Render $x }}</li>{{ end }}</ul></fieldset>`, strings.Join(options, " ")))
+	return NewWidget(WithOptions(`<fieldset name="{{ .Name }}" %s><ul>{{ range $x := .Fields }}<li>{{ .Render $x }}</li>{{ end }}</ul></fieldset>`, options...))
 }
 
 func renamefield(name string, number int, field Field) Field {
