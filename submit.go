@@ -22,6 +22,7 @@ func submitwidget(options ...string) Widget {
 
 type submitfield struct {
 	name         string
+	submitted    bool
 	validateable bool
 	*processor
 }
@@ -40,11 +41,12 @@ func (s *submitfield) Name(name ...string) string {
 }
 
 func (s *submitfield) Get() *Value {
-	return NewValue(nil)
+	return NewValue(s.submitted)
 }
 
 func (s *submitfield) Set(r *http.Request) {
 	s.Filter(s.Name(), r)
+	s.submitted = true
 	s.validateable = true
 }
 

@@ -1,6 +1,9 @@
 package fork
 
-import "reflect"
+import (
+	"fmt"
+	"reflect"
+)
 
 type Value struct {
 	Raw  interface{}
@@ -19,14 +22,40 @@ func NewValue(i interface{}) *Value {
 
 func (v *Value) String() string {
 	if v.Raw != nil {
-		return v.Raw.(string)
+		switch v.Raw.(type) {
+		case *Selection, []*Selection, []Field, []Form:
+			return fmt.Sprintf("%+v", v.Raw)
+		case bool:
+			return fmt.Sprintf("%t", v.Raw)
+		default:
+			return v.Raw.(string)
+		}
 	}
 	return ""
 }
 
 func (v *Value) Integer() int {
 	if v.Raw != nil {
-		return v.Raw.(int)
+		switch v.Raw.(type) {
+		case *Selection, []*Selection, []Field, Form, []Form:
+			return -1
+		default:
+			return v.Raw.(int)
+		}
 	}
 	return 0
+}
+
+func (v *Value) Bool() bool {
+	if v.Raw != nil {
+		switch v.Raw.(type) {
+		case *Selection:
+			return v.Raw.(*Selection).Set
+		case []*Selection, []Field, Form, []Form:
+			return false
+		default:
+			return v.Raw.(bool)
+		}
+	}
+	return false
 }

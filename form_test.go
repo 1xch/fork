@@ -99,6 +99,43 @@ func testbasic(t *testing.T, name string, f Form, postprovides string, GETexpect
 	if !strings.Contains(w2.Body.String(), POSTexpects) {
 		t.Errorf("\n---\n%s POST Error\nhave:\n---\n%s\n\nexpected:\n---\n%s\n---\n", name, w2.Body, POSTexpects)
 	}
+
+}
+
+func testvaluestring(t *testing.T, expected, provided string) {
+	if provided != expected {
+		t.Errorf("Expected %s, but received %s from form.Values() value.String()", expected, provided)
+	}
+}
+
+func testvaluebool(t *testing.T, expected, provided bool) {
+	if provided != expected {
+		t.Errorf("Expected %s, but received %s from form.Values() value.Bool()", expected, provided)
+	}
+}
+
+func TestValues(t *testing.T) {
+	f := NewForm(
+		TextField("ValueOne", nil, nil),
+		TextField("ValueTwo", nil, nil),
+		BooleanField("yes", "YES", true),
+	)
+	v1, v2, v3 := "VALUE1", "VALUE2", "no"
+	post := fmt.Sprintf(`ValueOne=%s&ValueTwo=%s&yes=%s`, v1, v2, v3)
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		ff := f.New()
+		ff.Process(r)
+		v := ff.Values()
+		testvaluestring(t, "VALUE1", v["ValueOne"].String())
+		testvaluestring(t, "VALUE2", v["ValueTwo"].String())
+		testvaluebool(t, false, v["yes"].Bool())
+		out := formbuffer(`form via POST`, ff)
+		w.Write(out.Bytes())
+	}
+	ts := testserve()
+	ts.handlers["POST"] = handler
+	PerformPost(ts, post)
 }
 
 func TestTextField(t *testing.T) {

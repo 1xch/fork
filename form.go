@@ -9,14 +9,23 @@ import (
 type Form interface {
 	New() Form
 	Former
+	Renderer
+	Informer
 }
 
 type Former interface {
 	Fields(...Field) []Field
 	Process(*http.Request)
+}
+
+type Renderer interface {
 	Buffer() *bytes.Buffer
 	String() string
 	Render() template.HTML
+}
+
+type Informer interface {
+	Values() map[string]*Value
 	Valid() bool
 	Errors() []string
 }
@@ -27,6 +36,7 @@ func NewForm(fs ...Field) Form {
 
 type form struct {
 	fields []Field
+	values map[string]*Value
 }
 
 func (f *form) New() Form {
@@ -70,6 +80,20 @@ func (f *form) String() string {
 
 func (f *form) Render() template.HTML {
 	return template.HTML(f.String())
+}
+
+func (f *form) mkvalues() {
+	f.values = make(map[string]*Value)
+	for _, fd := range f.fields {
+		f.values[fd.Name()] = fd.Get()
+	}
+}
+
+func (f *form) Values() map[string]*Value {
+	if f.values == nil {
+		f.mkvalues()
+	}
+	return f.values
 }
 
 func (f *form) Valid() bool {
