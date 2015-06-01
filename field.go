@@ -14,3 +14,23 @@ type Fielder interface {
 	Validateable() bool
 	Processor
 }
+
+type Processor interface {
+	Widget
+	Validater
+	Filterer
+}
+
+type processor struct {
+	Widget
+	Validater
+	Filterer
+}
+
+func NewProcessor(w Widget, validaters []interface{}, filters []interface{}) *processor {
+	return &processor{
+		Widget:    w,
+		Validater: NewValidater(validaters...),
+		Filterer:  NewFilterer(filters...),
+	}
+}

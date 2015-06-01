@@ -27,8 +27,12 @@ func (v *Value) String() string {
 			return fmt.Sprintf("%+v", v.Raw)
 		case bool:
 			return fmt.Sprintf("%t", v.Raw)
+		case int:
+			return fmt.Sprintf("%d", v.Raw)
+		case fmt.Stringer:
+			return v.String()
 		default:
-			return v.Raw.(string)
+			return fmt.Sprintf("%s", v.Raw)
 		}
 	}
 	return ""

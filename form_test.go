@@ -85,7 +85,7 @@ func postformhandlerfor(f Form) func(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func testbasic(t *testing.T, name string, f Form, postprovides string, GETexpects string, POSTexpects string) {
+func testbasic(t *testing.T, f Form, postprovides string, GETexpects string, POSTexpects string) {
 	w1, w2 := PerformForForm(f, postprovides)
 
 	if w1.Code != 200 || w2.Code != 200 {
@@ -93,11 +93,11 @@ func testbasic(t *testing.T, name string, f Form, postprovides string, GETexpect
 	}
 
 	if !strings.Contains(w1.Body.String(), GETexpects) {
-		t.Errorf("\n---\n%s GET Error\nhave:\n---\n%s\n\nexpected:\n---\n%s\n---\n", name, w1.Body, GETexpects)
+		t.Errorf("\n---\n%s GET Error\nhave:\n---\n%s\n\nexpected:\n---\n%s\n---\n", f.Tag(), w1.Body, GETexpects)
 	}
 
 	if !strings.Contains(w2.Body.String(), POSTexpects) {
-		t.Errorf("\n---\n%s POST Error\nhave:\n---\n%s\n\nexpected:\n---\n%s\n---\n", name, w2.Body, POSTexpects)
+		t.Errorf("\n---\n%s POST Error\nhave:\n---\n%s\n\nexpected:\n---\n%s\n---\n", f.Tag(), w2.Body, POSTexpects)
 	}
 
 }
@@ -116,6 +116,7 @@ func testvaluebool(t *testing.T, expected, provided bool) {
 
 func TestValues(t *testing.T) {
 	f := NewForm(
+		"TestValues",
 		TextField("ValueOne", nil, nil),
 		TextField("ValueTwo", nil, nil),
 		BooleanField("yes", "YES", true),
@@ -141,8 +142,7 @@ func TestValues(t *testing.T) {
 func TestTextField(t *testing.T) {
 	testbasic(
 		t,
-		"TextField",
-		NewForm(TextField("text", nil, nil)),
+		NewForm("TextField", TextField("text", nil, nil)),
 		`text=TEXT`,
 		`<input type="text" name="text" value="" >`,
 		`<input type="text" name="text" value="TEXT" >`,
@@ -152,8 +152,7 @@ func TestTextField(t *testing.T) {
 func TestTextAreaField(t *testing.T) {
 	testbasic(
 		t,
-		"TextAreaField",
-		NewForm(TextAreaField("textarea", nil, nil, "rows=10", "cols=10")),
+		NewForm("TextAreaField", TextAreaField("textarea", nil, nil, "rows=10", "cols=10")),
 		`textarea=TEXTAREA`,
 		`<textarea name="textarea" rows=10 cols=10></textarea>`,
 		`<textarea name="textarea" rows=10 cols=10>TEXTAREA</textarea>`,
@@ -163,8 +162,7 @@ func TestTextAreaField(t *testing.T) {
 func TestHiddenField(t *testing.T) {
 	testbasic(
 		t,
-		"HiddenField",
-		NewForm(HiddenField("hidden", nil, nil)),
+		NewForm("HiddenField", HiddenField("hidden", nil, nil)),
 		`hidden=HIDDEN`,
 		`<input type="hidden" name="hidden" value="" >`,
 		`<input type="hidden" name="hidden" value="HIDDEN" >`,
@@ -174,8 +172,7 @@ func TestHiddenField(t *testing.T) {
 func TestPasswordField(t *testing.T) {
 	testbasic(
 		t,
-		"PasswordField",
-		NewForm(PassWordField("password", nil, nil, "size=10", "maxlength=30")),
+		NewForm("PasswordField", PassWordField("password", nil, nil, "size=10", "maxlength=30")),
 		`password=PASSWORD`,
 		`<input type="password" name="password" value="" size=10 maxlength=30>`,
 		`<input type="password" name="password" value="PASSWORD" size=10 maxlength=30>`,
@@ -185,16 +182,14 @@ func TestPasswordField(t *testing.T) {
 func TestEmailField(t *testing.T) {
 	testbasic(
 		t,
-		"EmailField",
-		NewForm(EmailField("email", nil, nil)),
+		NewForm("EmailField", EmailField("email", nil, nil)),
 		`email=test@test.com`,
 		`<input type="email" name="email" value="" >`,
 		`<input type="email" name="email" value="test@test.com" >`,
 	)
 	testbasic(
 		t,
-		"EmailField :: Error",
-		NewForm(EmailField("email", nil, nil)),
+		NewForm("EmailField :: Error", EmailField("email", nil, nil)),
 		`email=invalidemail.com`,
 		`<input type="email" name="email" value="" >`,
 		`<input type="email" name="email" value="invalidemail.com" ><div class="field-errors"><ul><li>Invalid email address: mail: missing phrase</li></ul></div>`,
@@ -204,8 +199,7 @@ func TestEmailField(t *testing.T) {
 func TestBooleanField(t *testing.T) {
 	testbasic(
 		t,
-		"BooleanField",
-		NewForm(BooleanField("yes", "YES", true), BooleanField("no", "NO", false)),
+		NewForm("BooleanField", BooleanField("yes", "YES", true), BooleanField("no", "NO", false)),
 		`no=no`,
 		`<input type="checkbox" name="yes" value="yes" checked >YES<input type="checkbox" name="no" value="no" >NO`,
 		`<input type="checkbox" name="yes" value="yes" >YES<input type="checkbox" name="no" value="no" checked >NO`,
@@ -215,8 +209,7 @@ func TestBooleanField(t *testing.T) {
 func TestRadioInput(t *testing.T) {
 	testbasic(
 		t,
-		"RadioInput",
-		NewForm(RadioInput("radio-up", "UP", "up", false), RadioInput("radio-down", "DOWN", "down", false)),
+		NewForm("RadioInput", RadioInput("radio-up", "UP", "up", false), RadioInput("radio-down", "DOWN", "down", false)),
 		`radio-up=up`,
 		`<input type="radio" name="radio-up" value="up" >UP<input type="radio" name="radio-down" value="down" >DOWN`,
 		`<input type="radio" name="radio-up" value="up" checked >UP<input type="radio" name="radio-down" value="down" >DOWN`,
@@ -226,8 +219,7 @@ func TestRadioInput(t *testing.T) {
 func TestCheckBoxInput(t *testing.T) {
 	testbasic(
 		t,
-		"CheckboxInput",
-		NewForm(CheckboxInput("checkbox-left", "LEFT", "left", false), CheckboxInput("checkbox-right", "RIGHT", "right", false)),
+		NewForm("CheckboxInput", CheckboxInput("checkbox-left", "LEFT", "left", false), CheckboxInput("checkbox-right", "RIGHT", "right", false)),
 		`checkbox-left=left&checkbox-right=right`,
 		`<input type="checkbox" name="checkbox-left" value="left" >LEFT<input type="checkbox" name="checkbox-right" value="right" >RIGHT`,
 		`<input type="checkbox" name="checkbox-left" value="left" checked >LEFT<input type="checkbox" name="checkbox-right" value="right" checked >RIGHT`,
@@ -245,16 +237,14 @@ func makeselectoptions(so ...string) []*Selection {
 func TestSelectField(t *testing.T) {
 	testbasic(
 		t,
-		"SelectField",
-		NewForm(SelectField("selectfield", makeselectoptions("one", "two", "three"), nil, nil)),
+		NewForm("SelectField", SelectField("selectfield", makeselectoptions("one", "two", "three"), nil, nil)),
 		`selectfield=three`,
 		`<select name="selectfield" ><option value="one">ONE</option><option value="two">TWO</option><option value="three">THREE</option></select>`,
 		`<select name="selectfield" ><option value="one">ONE</option><option value="two">TWO</option><option value="three" selected>THREE</option></select>`,
 	)
 	testbasic(
 		t,
-		"MultiSelectField",
-		NewForm(SelectField("multiselectfield", makeselectoptions("one", "two", "three"), nil, nil, "multiple")),
+		NewForm("MultiSelectField", SelectField("multiselectfield", makeselectoptions("one", "two", "three"), nil, nil, "multiple")),
 		`multiselectfield=one two three`,
 		`<select name="multiselectfield" multiple><option value="one">ONE</option><option value="two">TWO</option><option value="three">THREE</option></select>`,
 		`<select name="multiselectfield" multiple><option value="one" selected>ONE</option><option value="two" selected>TWO</option><option value="three" selected>THREE</option></select>`,
@@ -264,8 +254,7 @@ func TestSelectField(t *testing.T) {
 func TestRadioField(t *testing.T) {
 	testbasic(
 		t,
-		"RadioField",
-		NewForm(RadioField("radiofield-group", "Select one:", makeselectoptions("A", "B", "C", "D"), nil, nil)),
+		NewForm("RadioField", RadioField("radiofield-group", "Select one:", makeselectoptions("A", "B", "C", "D"), nil, nil)),
 		`radiofield-group=A`,
 		`<fieldset name="radiofield-group" ><legend>Select one:</legend><ul><li><input type="radio" name="radiofield-group" value="A" >A</li><li><input type="radio" name="radiofield-group" value="B" >B</li><li><input type="radio" name="radiofield-group" value="C" >C</li><li><input type="radio" name="radiofield-group" value="D" >D</li></ul></fieldset>`,
 		`<fieldset name="radiofield-group" ><legend>Select one:</legend><ul><li><input type="radio" name="radiofield-group" value="A" checked >A</li><li><input type="radio" name="radiofield-group" value="B" >B</li><li><input type="radio" name="radiofield-group" value="C" >C</li><li><input type="radio" name="radiofield-group" value="D" >D</li></ul></fieldset>`,
@@ -275,16 +264,14 @@ func TestRadioField(t *testing.T) {
 func TestDateField(t *testing.T) {
 	testbasic(
 		t,
-		"DateField",
-		NewForm(DateField("datefield")),
+		NewForm("DateField", DateField("datefield")),
 		`datefield=26/02/2015`,
 		`<input type="date" name="datefield" value="" >`,
 		`<input type="date" name="datefield" value="26/02/2015" >`,
 	)
 	testbasic(
 		t,
-		"DateField :: Error",
-		NewForm(DateField("datefield")),
+		NewForm("DateField :: Error", DateField("datefield")),
 		`datefield=26022015`,
 		`<input type="date" name="datefield" value="" >`,
 		`<input type="date" name="datefield" value="26022015" ><div class="field-errors"><ul><li>Cannot parse 26022015 in format 02/01/2006</li></ul></div>`,
@@ -296,8 +283,7 @@ func TestListField(t *testing.T) {
 
 	testbasic(
 		t,
-		"ListField",
-		NewForm(ListField1),
+		NewForm("ListField", ListField1),
 		`listfield-0-TEST=IamZERO&listfield-1-TEST=IamONE&listfield7-seven=IshouldnotbeSEVEN`,
 		`<fieldset name="listfield" ><ul><li><input type="text" name="listfield-0-TEST" value="" ></li><li><input type="text" name="listfield-1-TEST" value="" ></li><li><input type="text" name="listfield-2-TEST" value="" ></li></ul></fieldset>`,
 		`<fieldset name="listfield" ><ul><li><input type="text" name="listfield-0-TEST" value="IamZERO" ></li><li><input type="text" name="listfield-1-TEST" value="IamONE" ></li></ul></fieldset>`,
@@ -305,7 +291,7 @@ func TestListField(t *testing.T) {
 }
 
 func SimpleForm() Form {
-	return NewForm(TextField("fftext", nil, nil), BooleanField("yes", "Yes", false))
+	return NewForm("simple", TextField("fftext", nil, nil), BooleanField("yes", "Yes", false))
 }
 
 func TestFormsField(t *testing.T) {
@@ -313,8 +299,7 @@ func TestFormsField(t *testing.T) {
 
 	testbasic(
 		t,
-		"FormsField",
-		NewForm(FormsField1),
+		NewForm("FormsField", FormsField1),
 		`formfield=2&formfield-0-fftext-0=TEXTFIELD0&formfield-0-yes-1=yes&formfield-1-fftext-0=TEXTFIELD1`,
 		`<fieldset name="formfield"><input type="hidden" name="formfield" value="1"><ul><li><input type="text" name="formfield-0-fftext-0" value="" ><input type="checkbox" name="formfield-0-yes-1" value="yes" >Yes</li></ul></fieldset>`,
 		`<fieldset name="formfield"><input type="hidden" name="formfield" value="2"><ul><li><input type="text" name="formfield-0-fftext-0" value="TEXTFIELD0" ><input type="checkbox" name="formfield-0-yes-1" value="yes" checked >Yes</li><li><input type="text" name="formfield-1-fftext-0" value="TEXTFIELD1" ><input type="checkbox" name="formfield-1-yes-1" value="yes" >Yes</li></ul></fieldset>`,
@@ -337,7 +322,7 @@ func TestXSRF(t *testing.T) {
 	field := XSRF("testXSRF", "SECRET")
 	xsrffield, _ := field.(*xsrf)
 
-	f := NewForm(field)
+	f := NewForm("XSRF", field)
 
 	ts := testserve()
 	ts.handlers["GET"] = getformhandlerfor(f)
@@ -385,8 +370,7 @@ func TestXSRF(t *testing.T) {
 func TestSubmitField(t *testing.T) {
 	testbasic(
 		t,
-		"SubmitField",
-		NewForm(SubmitField("test", nil, nil)),
+		NewForm("SubmitField", SubmitField("test", nil, nil)),
 		``,
 		`<form action="/" method="POST"><input type="submit" name="test" value="test" ></form>`,
 		`<form action="/" method="POST"><input type="submit" name="test" value="test" ></form>`,

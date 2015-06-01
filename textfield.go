@@ -35,6 +35,7 @@ type textfield struct {
 
 func (t *textfield) New() Field {
 	var newfield textfield = *t
+	t.Text = ""
 	t.validateable = false
 	return &newfield
 }

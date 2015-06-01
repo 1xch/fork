@@ -7,6 +7,7 @@ import (
 )
 
 type Form interface {
+	Tag() string
 	New() Form
 	Former
 	Renderer
@@ -30,13 +31,21 @@ type Informer interface {
 	Errors() []string
 }
 
-func NewForm(fs ...Field) Form {
-	return &form{fields: fs}
+func NewForm(tag string, fs ...Field) Form {
+	return &form{
+		tag:    tag,
+		fields: fs,
+	}
 }
 
 type form struct {
+	tag    string
 	fields []Field
 	values map[string]*Value
+}
+
+func (f *form) Tag() string {
+	return f.tag
 }
 
 func (f *form) New() Form {
