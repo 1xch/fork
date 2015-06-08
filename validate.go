@@ -1,16 +1,16 @@
 package fork
 
-import (
-	"fmt"
-	"reflect"
-)
+import "reflect"
 
 type Validater interface {
 	Error(Field) bool
 	Errors(Field) []string
 	Valid(Field) bool
 	Validate(Field) error
+	Validaters(...interface{}) []reflect.Value
 }
+
+var nilValidater = &validater{}
 
 func NewValidater(v ...interface{}) Validater {
 	return &validater{validaters: reflectValidaters(v...)}
@@ -53,27 +53,17 @@ func (v *validater) Validate(f Field) error {
 	return nil
 }
 
-func (v *validater) AddValidater(fn interface{}) {
-	v.validaters = append(v.validaters, valueValidater(fn))
+func (v *validater) Validaters(fns ...interface{}) []reflect.Value {
+	v.validaters = append(v.validaters, reflectValidaters(fns...)...)
+	return v.validaters
 }
 
 func reflectValidaters(fns ...interface{}) []reflect.Value {
 	var ret []reflect.Value
 	for _, fn := range fns {
-		ret = append(ret, valueValidater(fn))
+		ret = append(ret, valueFn(fn, `1 value and the value must be an error`))
 	}
 	return ret
-}
-
-func valueValidater(fn interface{}) reflect.Value {
-	v := reflect.ValueOf(fn)
-	if !isValidater(v.Type()) {
-		panic(fmt.Sprintf("Cannot use %q as a validater function: function must return 1 value and the value must be an error", fn))
-	}
-	if v.Kind() != reflect.Func {
-		panic(fmt.Sprintf("%+v is not a function", fn))
-	}
-	return v
 }
 
 func isValidater(typ reflect.Type) bool {

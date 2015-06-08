@@ -16,39 +16,18 @@ func NewSelection(value string, label string, set bool) *Selection {
 	return &Selection{value, label, set}
 }
 
-var selectbase string = `<select name="{{ .Name }}" %s>{{ range $x := .Selections }}<option value="{{ $x.Value }}"{{ if $x.Set }} selected{{ end }}>{{ $x.Label}}</option>{{ end }}</select>`
-
-func selectwidget(options ...string) Widget {
-	return NewWidget(WithOptions(selectbase, options...))
-}
-
-func SelectField(name string, s []*Selection, validaters []interface{}, filters []interface{}, options ...string) Field {
-	return &selectfield{
-		name:       name,
-		Selections: s,
-		processor:  NewProcessor(selectwidget(options...), validaters, filters),
-	}
-}
-
 type selectfield struct {
-	name         string
-	Selections   []*Selection
-	validateable bool
+	Selections []*Selection
+	*baseField
 	*processor
 }
 
 func (s *selectfield) New() Field {
 	var newfield selectfield = *s
+	newfield.baseField = s.baseField.Copy()
 	copy(newfield.Selections, s.Selections)
 	s.validateable = false
 	return &newfield
-}
-
-func (s *selectfield) Name(name ...string) string {
-	if len(name) > 0 {
-		s.name = strings.Join(name, "-")
-	}
-	return s.name
 }
 
 func (s *selectfield) Get() *Value {
@@ -71,14 +50,27 @@ func (s *selectfield) Set(req *http.Request) {
 	s.validateable = true
 }
 
-func (s *selectfield) Validateable() bool {
-	return s.validateable
+const selectbase = `<select name="{{ .Name }}" %s>{{ range $x := .Selections }}<option value="{{ $x.Value }}"{{ if $x.Set }} selected{{ end }}>{{ $x.Label}}</option>{{ end }}</select>`
+
+func selectWidget(options ...string) Widget {
+	return NewWidget(WithOptions(selectbase, options...))
+}
+
+func SelectField(name string, s []*Selection, v []interface{}, f []interface{}, options ...string) Field {
+	return &selectfield{
+		Selections: s,
+		baseField:  newBaseField(name),
+		processor: NewProcessor(
+			selectWidget(options...),
+			NewValidater(v...),
+			NewFilterer(f...),
+		),
+	}
 }
 
 type radiofield struct {
-	name         string
-	Selections   []Field
-	validateable bool
+	Selections []Field
+	*baseField
 	*processor
 }
 
@@ -87,13 +79,6 @@ func (r *radiofield) New() Field {
 	copy(newfield.Selections, r.Selections)
 	r.validateable = false
 	return &newfield
-}
-
-func (r *radiofield) Name(name ...string) string {
-	if len(name) > 0 {
-		r.name = strings.Join(name, "-")
-	}
-	return r.name
 }
 
 func (r *radiofield) Get() *Value {
@@ -107,11 +92,7 @@ func (r *radiofield) Set(req *http.Request) {
 	r.validateable = true
 }
 
-func (r *radiofield) Validateable() bool {
-	return r.validateable
-}
-
-func radiowidget(name string, legend string, options ...string) Widget {
+func radioWidget(name string, legend string, options ...string) Widget {
 	in := strings.Join([]string{
 		fmt.Sprintf(`<fieldset name="%s" `, name),
 		`%s>`,
@@ -129,10 +110,14 @@ func makeradioinputs(name string, selections []*Selection) []Field {
 	return ret
 }
 
-func RadioField(name string, legend string, s []*Selection, validaters []interface{}, filters []interface{}, options ...string) Field {
+func RadioField(name string, legend string, s []*Selection, v []interface{}, f []interface{}, options ...string) Field {
 	return &radiofield{
-		name:       name,
 		Selections: makeradioinputs(name, s),
-		processor:  NewProcessor(radiowidget(name, legend, options...), validaters, filters),
+		baseField:  newBaseField(name),
+		processor: NewProcessor(
+			radioWidget(name, legend, options...),
+			NewValidater(v...),
+			NewFilterer(f...),
+		),
 	}
 }

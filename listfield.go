@@ -5,66 +5,27 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
-	"strings"
 )
 
-func listfieldswidget(options ...string) Widget {
-	return NewWidget(WithOptions(`<fieldset name="{{ .Name }}" %s><ul>{{ range $x := .Fields }}<li>{{ .Render $x }}</li>{{ end }}</ul></fieldset>`, options...))
-}
-
-func renamefield(name string, number int, field Field) Field {
-	field.Name(name, strconv.Itoa(number), field.Name())
-	return field
-}
-
-func renamefields(name string, number int, field Field) []Field {
-	var ret []Field
-	for i := 0; i < number; i++ {
-		fd := field.New()
-		ret = append(ret, renamefield(name, i, fd))
-	}
-	return ret
-}
-
-func getregexp(name string) *regexp.Regexp {
-	return regexp.MustCompile(fmt.Sprintf("^%s-", name))
-}
-
-func ListField(name string, startwith int, start Field, options ...string) Field {
-	return &listfield{
-		name:      name,
-		base:      start,
-		Fields:    renamefields(name, startwith, start),
-		processor: NewProcessor(listfieldswidget(options...), nil, nil),
-	}
-}
-
-type listfield struct {
-	name         string
-	base         Field
-	Fields       []Field
-	validateable bool
+type listField struct {
+	base   Field
+	Fields []Field
+	*baseField
 	*processor
 }
 
-func (lf *listfield) New() Field {
-	var newfield listfield = *lf
-	lf.validateable = false
+func (l *listField) New() Field {
+	var newfield listField = *l
+	newfield.base = l.base.New()
+	newfield.validateable = false
 	return &newfield
 }
 
-func (lf *listfield) Name(name ...string) string {
-	if len(name) > 0 {
-		lf.name = strings.Join(name, "-")
-	}
-	return lf.name
+func (l *listField) Get() *Value {
+	return NewValue(l.Fields)
 }
 
-func (lf *listfield) Get() *Value {
-	return NewValue(lf.Fields)
-}
-
-func (lf *listfield) Set(r *http.Request) {
+func (lf *listField) Set(r *http.Request) {
 	lf.Fields = nil
 	pl := 0
 	for k, _ := range r.PostForm {
@@ -75,7 +36,7 @@ func (lf *listfield) Set(r *http.Request) {
 	if pl > 0 {
 		for x := 0; x < pl; x++ {
 			nf := lf.base.New()
-			renamefield(lf.name, x, nf)
+			renameField(lf.name, x, nf)
 			nf.Set(r)
 			lf.Fields = append(lf.Fields, nf)
 		}
@@ -83,6 +44,37 @@ func (lf *listfield) Set(r *http.Request) {
 	lf.validateable = true
 }
 
-func (lf *listfield) Validateable() bool {
-	return lf.validateable
+func listFieldsWidget(options ...string) Widget {
+	return NewWidget(WithOptions(`<fieldset name="{{ .Name }}" %s><ul>{{ range $x := .Fields }}<li>{{ .Render $x }}</li>{{ end }}</ul></fieldset>`, options...))
+}
+
+func renameField(name string, number int, field Field) Field {
+	field.Name(name, strconv.Itoa(number), field.Name())
+	return field
+}
+
+func renameFields(name string, number int, field Field) []Field {
+	var ret []Field
+	for i := 0; i < number; i++ {
+		fd := field.New()
+		ret = append(ret, renameField(name, i, fd))
+	}
+	return ret
+}
+
+func getregexp(name string) *regexp.Regexp {
+	return regexp.MustCompile(fmt.Sprintf("^%s-", name))
+}
+
+func ListField(name string, startwith int, starting Field, options ...string) Field {
+	return &listField{
+		base:      starting,
+		Fields:    renameFields(name, startwith, starting),
+		baseField: newBaseField(name),
+		processor: NewProcessor(
+			listFieldsWidget(options...),
+			nilValidater,
+			nilFilterer,
+		),
+	}
 }

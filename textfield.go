@@ -4,96 +4,105 @@ import (
 	"fmt"
 	"net/http"
 	"net/mail"
-	"strings"
 )
 
-func textwidget(options ...string) Widget {
-	return NewWidget(WithOptions(`<input type="text" name="{{ .Name }}" value="{{ .Text }}" %s>`, options...))
-}
-
-func newtextfield(name string, widget Widget, validaters []interface{}, filters []interface{}) Field {
-	return &textfield{
-		name: name,
-		Text: "",
-		processor: NewProcessor(widget,
-			validaters,
-			filters,
-		),
+func newtextField(b *baseField, w Widget, v Validater, f Filterer) Field {
+	return &textField{
+		baseField: b,
+		processor: NewProcessor(w, v, f),
 	}
 }
 
-func TextField(name string, validaters []interface{}, filters []interface{}, options ...string) Field {
-	return newtextfield(name, textwidget(options...), validaters, filters)
-}
-
-type textfield struct {
-	name         string
-	Text         string
-	validateable bool
+type textField struct {
+	Text string
+	*baseField
 	*processor
 }
 
-func (t *textfield) New() Field {
-	var newfield textfield = *t
-	t.Text = ""
-	t.validateable = false
+func (t *textField) New() Field {
+	var newfield textField = *t
+	newfield.baseField = t.baseField.Copy()
+	newfield.Text = ""
+	newfield.validateable = false
 	return &newfield
 }
 
-func (t *textfield) Name(name ...string) string {
-	if len(name) > 0 {
-		t.name = strings.Join(name, "-")
-	}
-	return t.name
-}
-
-func (t *textfield) Get() *Value {
+func (t *textField) Get() *Value {
 	return NewValue(t.Text)
 }
 
-func (t *textfield) Set(r *http.Request) {
+func (t *textField) Set(r *http.Request) {
 	v := t.Filter(t.Name(), r)
 	t.Text = v.String()
 	t.validateable = true
 }
 
-func (t *textfield) Validateable() bool {
-	return t.validateable
+func textWidget(options ...string) Widget {
+	return NewWidget(WithOptions(`<input type="text" name="{{ .Name }}" value="{{ .Text }}" %s>`, options...))
 }
 
-func textareawidget(options ...string) Widget {
+func TextField(name string, v []interface{}, f []interface{}, options ...string) Field {
+	return newtextField(
+		newBaseField(name),
+		textWidget(options...),
+		NewValidater(v...),
+		NewFilterer(f...),
+	)
+}
+
+func textAreaWidget(options ...string) Widget {
 	return NewWidget(WithOptions(`<textarea name="{{ .Name }}" %s>{{ .Text }}</textarea>`, options...))
 }
 
-func TextAreaField(name string, validaters []interface{}, filters []interface{}, options ...string) Field {
-	return newtextfield(name, textareawidget(options...), validaters, filters)
+func TextAreaField(name string, v []interface{}, f []interface{}, options ...string) Field {
+	return newtextField(
+		newBaseField(name),
+		textAreaWidget(options...),
+		NewValidater(v...),
+		NewFilterer(f...),
+	)
 }
 
-func hiddenwidget(options ...string) Widget {
+func hiddenWidget(options ...string) Widget {
 	return NewWidget(WithOptions(`<input type="hidden" name="{{ .Name }}" value="{{ .Text }}" %s>`, options...))
 }
 
-func HiddenField(name string, validaters []interface{}, filters []interface{}, options ...string) Field {
-	return newtextfield(name, hiddenwidget(options...), validaters, filters)
+func HiddenField(name string, v []interface{}, f []interface{}, options ...string) Field {
+	return newtextField(
+		newBaseField(name),
+		hiddenWidget(options...),
+		NewValidater(v...),
+		NewFilterer(f...),
+	)
 }
 
-func passwordwidget(options ...string) Widget {
+func passwordWidget(options ...string) Widget {
 	return NewWidget(WithOptions(`<input type="password" name="{{ .Name }}" value="{{ .Text }}" %s>`, options...))
 }
 
-func PassWordField(name string, validaters []interface{}, filters []interface{}, options ...string) Field {
-	return newtextfield(name, passwordwidget(options...), validaters, filters)
+func PassWordField(name string, v []interface{}, f []interface{}, options ...string) Field {
+	return newtextField(
+		newBaseField(name),
+		passwordWidget(options...),
+		NewValidater(v...),
+		NewFilterer(f...),
+	)
 }
 
-func emailwidget(options ...string) Widget {
+func emailWidget(options ...string) Widget {
 	return NewWidget(WithOptions(`<input type="email" name="{{ .Name }}" value="{{ .Text }}" %s>`, options...))
 }
 
-func EmailField(name string, validaters []interface{}, filters []interface{}, options ...string) Field {
-	return newtextfield(name, emailwidget(options...), append(validaters, ValidEmail), nil)
+func EmailField(name string, v []interface{}, f []interface{}, options ...string) Field {
+	return newtextField(
+		newBaseField(name),
+		emailWidget(options...),
+		NewValidater(append(v, ValidEmail)...),
+		NewFilterer(f...),
+	)
 }
 
-func ValidEmail(t *textfield) error {
+func ValidEmail(t *textField) error {
 	if t.validateable {
 		_, err := mail.ParseAddress(t.Text)
 		if err != nil {

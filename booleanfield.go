@@ -6,34 +6,19 @@ import (
 	"strings"
 )
 
-func BooleanField(name string, label string, start bool, options ...string) Field {
-	return &booleanfield{
-		name:      name,
-		Selection: NewSelection(name, label, start),
-		processor: NewProcessor(togglewidget("checkbox", options...), nil, nil),
-	}
-}
-
 type booleanfield struct {
-	name         string
-	Selection    *Selection
-	validateable bool
+	Selection *Selection
+	*baseField
 	*processor
 }
 
 func (b *booleanfield) New() Field {
 	var newfield booleanfield = *b
 	var newselection Selection = *b.Selection
+	newfield.baseField = b.baseField.Copy()
 	newfield.Selection = &newselection
 	b.validateable = false
 	return &newfield
-}
-
-func (b *booleanfield) Name(name ...string) string {
-	if len(name) > 0 {
-		b.name = strings.Join(name, "-")
-	}
-	return b.name
 }
 
 func (b *booleanfield) Get() *Value {
@@ -50,11 +35,7 @@ func (b *booleanfield) Set(r *http.Request) {
 	b.validateable = true
 }
 
-func (b *booleanfield) Validateable() bool {
-	return b.validateable
-}
-
-func togglewidget(input string, options ...string) Widget {
+func toggleWidget(input string, options ...string) Widget {
 	in := strings.Join([]string{
 		fmt.Sprintf(`<input type="%s" `, input),
 		`name="{{ .Name }}" `,
@@ -65,18 +46,34 @@ func togglewidget(input string, options ...string) Widget {
 	return NewWidget(WithOptions(in, options...))
 }
 
+func BooleanField(name string, label string, start bool, options ...string) Field {
+	return &booleanfield{
+		Selection: NewSelection(name, label, start),
+		baseField: newBaseField(name),
+		processor: NewProcessor(
+			toggleWidget("checkbox", options...),
+			nilValidater,
+			nilFilterer,
+		),
+	}
+}
+
 func ToggleInput(name string, label string, value string, widget Widget, checked bool) Field {
 	return &booleanfield{
-		name:      name,
 		Selection: NewSelection(value, label, checked),
-		processor: NewProcessor(widget, nil, nil),
+		baseField: newBaseField(name),
+		processor: NewProcessor(
+			widget,
+			nilValidater,
+			nilFilterer,
+		),
 	}
 }
 
 func RadioInput(name string, label string, value string, checked bool, options ...string) Field {
-	return ToggleInput(name, label, value, togglewidget("radio", options...), checked)
+	return ToggleInput(name, label, value, toggleWidget("radio", options...), checked)
 }
 
 func CheckboxInput(name string, label string, value string, checked bool, options ...string) Field {
-	return ToggleInput(name, label, value, togglewidget("checkbox", options...), checked)
+	return ToggleInput(name, label, value, toggleWidget("checkbox", options...), checked)
 }

@@ -1,24 +1,52 @@
 package fork
 
-import "net/http"
+import (
+	"net/http"
+	"strings"
+)
 
 type Field interface {
 	New() Field
-	Fielder
-}
-
-type Fielder interface {
-	Name(...string) string
 	Get() *Value
 	Set(*http.Request)
-	Validateable() bool
+	BaseField
 	Processor
+}
+
+type BaseField interface {
+	Name(...string) string
+	Validateable() bool
+}
+
+func newBaseField(name string) *baseField {
+	return &baseField{name: name}
+}
+
+type baseField struct {
+	name         string
+	validateable bool
+}
+
+func (b *baseField) Name(name ...string) string {
+	if len(name) > 0 {
+		b.name = strings.Join(name, "-")
+	}
+	return b.name
+}
+
+func (b *baseField) Validateable() bool {
+	return b.validateable
+}
+
+func (b *baseField) Copy() *baseField {
+	var ret baseField = *b
+	return &ret
 }
 
 type Processor interface {
 	Widget
-	Validater
 	Filterer
+	Validater
 }
 
 type processor struct {
@@ -27,10 +55,10 @@ type processor struct {
 	Filterer
 }
 
-func NewProcessor(w Widget, validaters []interface{}, filters []interface{}) *processor {
+func NewProcessor(w Widget, v Validater, f Filterer) *processor {
 	return &processor{
 		Widget:    w,
-		Validater: NewValidater(validaters...),
-		Filterer:  NewFilterer(filters...),
+		Validater: v,
+		Filterer:  f,
 	}
 }

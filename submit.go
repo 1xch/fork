@@ -1,55 +1,42 @@
 package fork
 
-import (
-	"net/http"
-	"strings"
-)
+import "net/http"
 
-func SubmitField(name string, validaters []interface{}, filters []interface{}, options ...string) Field {
-	return &submitfield{
-		name: name,
-		processor: NewProcessor(
-			submitwidget(options...),
-			validaters,
-			filters,
-		),
-	}
-}
-
-func submitwidget(options ...string) Widget {
-	return NewWidget(WithOptions(`<input type="submit" name="{{ .Name }}" value="{{ .Name }}" %s>`, options...))
-}
-
-type submitfield struct {
-	name         string
-	submitted    bool
-	validateable bool
+type submitField struct {
+	Submitted bool
+	*baseField
 	*processor
 }
 
-func (s *submitfield) New() Field {
-	var newfield submitfield = *s
-	s.validateable = false
+func (s *submitField) New() Field {
+	var newfield submitField = *s
+	newfield.baseField = s.baseField.Copy()
+	newfield.Submitted = false
+	newfield.validateable = false
 	return &newfield
 }
 
-func (s *submitfield) Name(name ...string) string {
-	if len(name) > 0 {
-		s.name = strings.Join(name, "-")
-	}
-	return s.name
+func (s *submitField) Get() *Value {
+	return NewValue(s.Submitted)
 }
 
-func (s *submitfield) Get() *Value {
-	return NewValue(s.submitted)
-}
-
-func (s *submitfield) Set(r *http.Request) {
+func (s *submitField) Set(r *http.Request) {
 	s.Filter(s.Name(), r)
-	s.submitted = true
+	s.Submitted = true
 	s.validateable = true
 }
 
-func (s *submitfield) Validateable() bool {
-	return s.validateable
+func submitWidget(options ...string) Widget {
+	return NewWidget(WithOptions(`<input type="submit" name="{{ .Name }}" value="{{ .Name }}" %s>`, options...))
+}
+
+func SubmitField(name string, v []interface{}, f []interface{}, options ...string) Field {
+	return &submitField{
+		baseField: newBaseField(name),
+		processor: NewProcessor(
+			submitWidget(options...),
+			NewValidater(v...),
+			NewFilterer(f...),
+		),
+	}
 }

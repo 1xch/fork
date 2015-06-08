@@ -1,18 +1,20 @@
 package fork
 
 import (
-	"fmt"
 	"net/http"
 	"reflect"
 )
 
 type Filterer interface {
 	Filter(string, *http.Request) *Value
+	Filters(...interface{}) []reflect.Value
 }
 
 func NewFilterer(f ...interface{}) Filterer {
 	return &filterer{filters: reflectFilters(f...)}
 }
+
+var nilFilterer = &filterer{}
 
 type filterer struct {
 	filters []reflect.Value
@@ -30,30 +32,20 @@ func (fr *filterer) Filter(k string, r *http.Request) *Value {
 	return NewValue(nil)
 }
 
-func (fr *filterer) AddFilter(fn interface{}) {
-	fr.filters = append(fr.filters, valueFilter(fn))
+func (fr *filterer) Filters(fns ...interface{}) []reflect.Value {
+	fr.filters = append(fr.filters, reflectFilters(fns...)...)
+	return fr.filters
 }
 
 func reflectFilters(fns ...interface{}) []reflect.Value {
 	var ret []reflect.Value
 	for _, fn := range fns {
-		ret = append(ret, valueFilter(fn))
+		ret = append(ret, valueFn(fn, `1 value, or 1 value and 1 error value`))
 	}
 	return ret
 }
 
 var errorType = reflect.TypeOf((*error)(nil)).Elem()
-
-func valueFilter(fn interface{}) reflect.Value {
-	v := reflect.ValueOf(fn)
-	if !isFilter(v.Type()) {
-		panic(fmt.Sprintf("Cannot use function %q with %d results\nreturn must be 1 value, or 1 value and 1 error value", fn, v.Type().NumOut()))
-	}
-	if v.Kind() != reflect.Func {
-		panic(fmt.Sprintf("%+v is not a function", fn))
-	}
-	return v
-}
 
 func isFilter(typ reflect.Type) bool {
 	switch {

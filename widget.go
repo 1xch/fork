@@ -14,10 +14,16 @@ type Widget interface {
 	RenderWith(map[string]interface{}) template.HTML
 }
 
-const defaulttemplate = `
-{{ define "fielderrors" }}<div class="field-errors"><ul>{{ range $x := .Errors . }}<li>{{ $x }}</li>{{ end }}</ul></div>{{ end }}
-{{ define "default" }}%s{{ if .Error .}}{{ template "fielderrors" .}}{{ end }}{{ end }}
-`
+var defaultTemplate = strings.Join([]string{
+	`{{ define "fielderrors" }}`,
+	`<div class="field-errors">`,
+	`<ul>{{ range $x := .Errors . }}`,
+	`<li>{{ $x }}</li>`,
+	`{{ end }}</ul></div>{{ end }}`,
+	`{{ define "default" }}`,
+	`%s`,
+	`{{ if .Error .}}{{ template "fielderrors" .}}{{ end }}{{ end }}`,
+}, "")
 
 func WithOptions(base string, options ...string) string {
 	return fmt.Sprintf(base, strings.Join(options, " "))
@@ -26,7 +32,7 @@ func WithOptions(base string, options ...string) string {
 func NewWidget(t string) Widget {
 	var err error
 	ti := &widget{name: "default"}
-	tt := fmt.Sprintf(defaulttemplate, t)
+	tt := fmt.Sprintf(defaultTemplate, t)
 	ti.widget, err = template.New("widget").Parse(tt)
 	if err != nil {
 		ti.widget, _ = template.New("errorwidget").Parse(err.Error())

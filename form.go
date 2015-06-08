@@ -6,12 +6,19 @@ import (
 	"net/http"
 )
 
+type FormConfig func(Form) error
+
 type Form interface {
-	Tag() string
-	New() Form
+	Creator
 	Former
 	Renderer
 	Informer
+	Checker
+}
+
+type Creator interface {
+	New() Form
+	Configure(...FormConfig) error
 }
 
 type Former interface {
@@ -26,22 +33,39 @@ type Renderer interface {
 }
 
 type Informer interface {
+	Tag() string
 	Values() map[string]*Value
-	Valid() bool
 	Errors() []string
 }
 
-func NewForm(tag string, fs ...Field) Form {
-	return &form{
-		tag:    tag,
-		fields: fs,
+func Checks(cs ...interface{}) FormConfig {
+	return func(f Form) error {
+		f.Checks(cs...)
+		return nil
 	}
+}
+
+func Fields(fs ...Field) FormConfig {
+	return func(f Form) error {
+		f.Fields(fs...)
+		return nil
+	}
+}
+
+func NewForm(tag string, fc ...FormConfig) Form {
+	nf := &form{
+		tag:     tag,
+		Checker: NewChecker(),
+	}
+	nf.Configure(fc...)
+	return nf
 }
 
 type form struct {
 	tag    string
 	fields []Field
 	values map[string]*Value
+	Checker
 }
 
 func (f *form) Tag() string {
@@ -56,6 +80,14 @@ func (f *form) New() Form {
 		newform.fields = append(newform.fields, field.New())
 	}
 	return &newform
+}
+
+func (f *form) Configure(fc ...FormConfig) error {
+	var err error
+	for _, c := range fc {
+		err = c(f)
+	}
+	return err
 }
 
 func (f *form) Fields(fs ...Field) []Field {
@@ -103,15 +135,6 @@ func (f *form) Values() map[string]*Value {
 		f.mkvalues()
 	}
 	return f.values
-}
-
-func (f *form) Valid() bool {
-	for _, fd := range f.Fields() {
-		if !fd.Valid(fd) {
-			return false
-		}
-	}
-	return true
 }
 
 func (f *form) Errors() []string {

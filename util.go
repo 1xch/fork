@@ -5,6 +5,43 @@ import (
 	"reflect"
 )
 
+type forkError struct {
+	err  string
+	vals []interface{}
+}
+
+func (f *forkError) Error() string {
+	return fmt.Sprintf(f.err, f.vals...)
+}
+
+func (f *forkError) Out(vals ...interface{}) *forkError {
+	f.vals = vals
+	return f
+}
+
+func ForkError(err string) *forkError {
+	return &forkError{err: err}
+}
+
+var NotAFunction = ForkError(`[fork] #+v is not a function`)
+
+var InvalidFunction = ForkError(`[fork] cannot use function %q with %d results, return must be %s`)
+
+var WrongNumberArgs = ForkError(`wrong number of args: got %d want at least %d`)
+
+var UnassignableArg = ForkError(`arg %d has type %s; should be %s`)
+
+func valueFn(fn interface{}, out string) reflect.Value {
+	v := reflect.ValueOf(fn)
+	if !isFilter(v.Type()) {
+		panic(InvalidFunction.Out(fn, v.Type().NumOut(), out).Error())
+	}
+	if v.Kind() != reflect.Func {
+		panic(NotAFunction.Out(fn).Error())
+	}
+	return v
+}
+
 func canBeNil(typ reflect.Type) bool {
 	switch typ.Kind() {
 	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Ptr, reflect.Slice:
@@ -19,12 +56,12 @@ func call(fn reflect.Value, args ...interface{}) (interface{}, error) {
 	var dddType reflect.Type
 	if typ.IsVariadic() {
 		if len(args) < numIn-1 {
-			return nil, fmt.Errorf("wrong number of args: got %d want at least %d", len(args), numIn-1)
+			return nil, WrongNumberArgs.Out(len(args), numIn-1)
 		}
 		dddType = typ.In(numIn - 1).Elem()
 	} else {
 		if len(args) != numIn {
-			return nil, fmt.Errorf("wrong number of args: got %d want %d", len(args), numIn)
+			return nil, WrongNumberArgs.Out(len(args), numIn)
 		}
 	}
 	argv := make([]reflect.Value, len(args))
@@ -40,7 +77,7 @@ func call(fn reflect.Value, args ...interface{}) (interface{}, error) {
 			value = reflect.Zero(argType)
 		}
 		if !value.Type().AssignableTo(argType) {
-			return nil, fmt.Errorf("arg %d has type %s; should be %s", i, value.Type(), argType)
+			return nil, UnassignableArg.Out(i, value.Type(), argType)
 		}
 		argv[i] = value
 	}

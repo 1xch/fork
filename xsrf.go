@@ -14,50 +14,19 @@ import (
 	"time"
 )
 
-var xsrfbase string = `<input type="hidden" name="{{ .Name }}" value="{{ .Token }}" >`
-
-var keybase = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890")
-
-func randomSequence(n int) string {
-	rand.Seed(time.Now().UTC().UnixNano())
-	b := make([]rune, n)
-	for i := range b {
-		b[i] = keybase[rand.Intn(len(keybase))]
-	}
-	return string(b)
-}
-
-func XSRF(name string, secret string) Field {
-	return &xsrf{
-		name:         name,
-		Secret:       secret,
-		Key:          randomSequence(12),
-		validateable: true,
-		processor: NewProcessor(
-			NewWidget(xsrfbase),
-			[]interface{}{ValidateXsrf},
-			nil,
-		),
-	}
-}
-
 type xsrf struct {
-	name         string
-	Secret       string
-	Key          string
-	current      string
-	validateable bool
+	Secret  string
+	Key     string
+	current string
+	*baseField
 	*processor
 }
 
 func (x *xsrf) New() Field {
 	var newfield xsrf = *x
+	newfield.baseField = x.baseField.Copy()
 	newfield.current = ""
 	return &newfield
-}
-
-func (x *xsrf) Name(name ...string) string {
-	return x.name
 }
 
 func (x *xsrf) Get() *Value {
@@ -71,10 +40,6 @@ func (x *xsrf) Set(r *http.Request) {
 	if err == nil {
 		x.current = ""
 	}
-}
-
-func (x *xsrf) Validateable() bool {
-	return x.validateable
 }
 
 func (x *xsrf) Token() string {
@@ -134,4 +99,32 @@ func validTokenAtTime(token string, secret string, key string, now time.Time) bo
 	expected := generateTokenAtTime(secret, key, issueTime)
 
 	return subtle.ConstantTimeCompare([]byte(token), []byte(expected)) == 1
+}
+
+const xsrfWidget = `<input type="hidden" name="{{ .Name }}" value="{{ .Token }}" >`
+
+var keybase = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890")
+
+func randomSequence(n int) string {
+	rand.Seed(time.Now().UTC().UnixNano())
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = keybase[rand.Intn(len(keybase))]
+	}
+	return string(b)
+}
+
+func XSRF(name string, secret string) Field {
+	ret := &xsrf{
+		Secret:    secret,
+		Key:       randomSequence(12),
+		baseField: newBaseField(name),
+		processor: NewProcessor(
+			NewWidget(xsrfWidget),
+			NewValidater(ValidateXsrf),
+			NewFilterer(),
+		),
+	}
+	ret.validateable = true
+	return ret
 }
