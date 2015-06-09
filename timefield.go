@@ -13,15 +13,15 @@ const (
 type timeField struct {
 	format string
 	Data   string
-	*baseField
-	*processor
+	*named
+	Processor
 }
 
 func (t *timeField) New() Field {
 	var newfield timeField = *t
-	newfield.baseField = t.baseField.Copy()
+	newfield.named = t.named.Copy()
 	newfield.Data = ""
-	newfield.validateable = false
+	newfield.SetValidateable(false)
 	return &newfield
 }
 
@@ -32,14 +32,14 @@ func (t *timeField) Get() *Value {
 func (t *timeField) Set(r *http.Request) {
 	v := t.Filter(t.Name(), r)
 	t.Data = v.String()
-	t.validateable = true
+	t.SetValidateable(true)
 }
 
 func TimeField(name string, format string, widget Widget, v []interface{}, f []interface{}) Field {
 	return &timeField{
-		format:    format,
-		baseField: newBaseField(name),
-		processor: NewProcessor(
+		format: format,
+		named:  newnamed(name),
+		Processor: NewProcessor(
 			widget,
 			NewValidater(append(v, ValidateTime)...),
 			NewFilterer(append(f, NewFilterTime(format))...),
@@ -58,7 +58,7 @@ func NewFilterTime(format string) func(string) string {
 }
 
 func ValidateTime(t *timeField) error {
-	if t.validateable {
+	if t.Validateable() {
 		_, err := time.Parse(t.format, t.Data)
 		if err != nil {
 			return fmt.Errorf("Cannot parse %s in format %s", t.Data, t.format)

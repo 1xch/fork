@@ -8,6 +8,8 @@ type Validater interface {
 	Valid(Field) bool
 	Validate(Field) error
 	Validaters(...interface{}) []reflect.Value
+	Validateable() bool
+	SetValidateable(bool) bool
 }
 
 var nilValidater = &validater{}
@@ -17,7 +19,8 @@ func NewValidater(v ...interface{}) Validater {
 }
 
 type validater struct {
-	validaters []reflect.Value
+	validateable bool
+	validaters   []reflect.Value
 }
 
 func (v *validater) Error(f Field) bool {
@@ -58,10 +61,19 @@ func (v *validater) Validaters(fns ...interface{}) []reflect.Value {
 	return v.validaters
 }
 
+func (v *validater) Validateable() bool {
+	return v.validateable
+}
+
+func (v *validater) SetValidateable(b bool) bool {
+	v.validateable = b
+	return v.Validateable()
+}
+
 func reflectValidaters(fns ...interface{}) []reflect.Value {
 	var ret []reflect.Value
 	for _, fn := range fns {
-		ret = append(ret, valueFn(fn, `1 value and the value must be an error`))
+		ret = append(ret, valueFn(fn, isValidater, `1 value and the value must be an error`))
 	}
 	return ret
 }

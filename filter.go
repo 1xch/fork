@@ -40,7 +40,7 @@ func (fr *filterer) Filters(fns ...interface{}) []reflect.Value {
 func reflectFilters(fns ...interface{}) []reflect.Value {
 	var ret []reflect.Value
 	for _, fn := range fns {
-		ret = append(ret, valueFn(fn, `1 value, or 1 value and 1 error value`))
+		ret = append(ret, valueFn(fn, isFilter, `1 value, or 1 value and 1 error value`))
 	}
 	return ret
 }

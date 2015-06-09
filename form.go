@@ -9,11 +9,16 @@ import (
 type FormConfig func(Form) error
 
 type Form interface {
+	Tagged
 	Creator
 	Former
 	Renderer
 	Informer
 	Checker
+}
+
+type Tagged interface {
+	Tag() string
 }
 
 type Creator interface {
@@ -33,7 +38,6 @@ type Renderer interface {
 }
 
 type Informer interface {
-	Tag() string
 	Values() map[string]*Value
 	Errors() []string
 }

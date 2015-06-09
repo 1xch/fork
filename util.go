@@ -11,7 +11,7 @@ type forkError struct {
 }
 
 func (f *forkError) Error() string {
-	return fmt.Sprintf(f.err, f.vals...)
+	return fmt.Sprintf("[fork] %s", fmt.Sprintf(f.err, f.vals...))
 }
 
 func (f *forkError) Out(vals ...interface{}) *forkError {
@@ -23,17 +23,17 @@ func ForkError(err string) *forkError {
 	return &forkError{err: err}
 }
 
-var NotAFunction = ForkError(`[fork] #+v is not a function`)
+var NotAFunction = ForkError(`#+v is not a function`)
 
-var InvalidFunction = ForkError(`[fork] cannot use function %q with %d results, return must be %s`)
+var InvalidFunction = ForkError(`cannot use function %q with %d results, return must be %s`)
 
 var WrongNumberArgs = ForkError(`wrong number of args: got %d want at least %d`)
 
 var UnassignableArg = ForkError(`arg %d has type %s; should be %s`)
 
-func valueFn(fn interface{}, out string) reflect.Value {
+func valueFn(fn interface{}, is func(reflect.Type) bool, out string) reflect.Value {
 	v := reflect.ValueOf(fn)
-	if !isFilter(v.Type()) {
+	if !is(v.Type()) {
 		panic(InvalidFunction.Out(fn, v.Type().NumOut(), out).Error())
 	}
 	if v.Kind() != reflect.Func {

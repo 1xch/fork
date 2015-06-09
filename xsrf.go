@@ -18,13 +18,13 @@ type xsrf struct {
 	Secret  string
 	Key     string
 	current string
-	*baseField
-	*processor
+	*named
+	Processor
 }
 
 func (x *xsrf) New() Field {
 	var newfield xsrf = *x
-	newfield.baseField = x.baseField.Copy()
+	newfield.named = x.named.Copy()
 	newfield.current = ""
 	return &newfield
 }
@@ -116,15 +116,15 @@ func randomSequence(n int) string {
 
 func XSRF(name string, secret string) Field {
 	ret := &xsrf{
-		Secret:    secret,
-		Key:       randomSequence(12),
-		baseField: newBaseField(name),
-		processor: NewProcessor(
+		Secret: secret,
+		Key:    randomSequence(12),
+		named:  newnamed(name),
+		Processor: NewProcessor(
 			NewWidget(xsrfWidget),
 			NewValidater(ValidateXsrf),
 			NewFilterer(),
 		),
 	}
-	ret.validateable = true
+	ret.SetValidateable(true)
 	return ret
 }

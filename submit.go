@@ -4,15 +4,15 @@ import "net/http"
 
 type submitField struct {
 	Submitted bool
-	*baseField
-	*processor
+	*named
+	Processor
 }
 
 func (s *submitField) New() Field {
 	var newfield submitField = *s
-	newfield.baseField = s.baseField.Copy()
+	newfield.named = s.named.Copy()
 	newfield.Submitted = false
-	newfield.validateable = false
+	newfield.SetValidateable(false)
 	return &newfield
 }
 
@@ -23,7 +23,7 @@ func (s *submitField) Get() *Value {
 func (s *submitField) Set(r *http.Request) {
 	s.Filter(s.Name(), r)
 	s.Submitted = true
-	s.validateable = true
+	s.SetValidateable(true)
 }
 
 func submitWidget(options ...string) Widget {
@@ -32,8 +32,8 @@ func submitWidget(options ...string) Widget {
 
 func SubmitField(name string, v []interface{}, f []interface{}, options ...string) Field {
 	return &submitField{
-		baseField: newBaseField(name),
-		processor: NewProcessor(
+		named: newnamed(name),
+		Processor: NewProcessor(
 			submitWidget(options...),
 			NewValidater(v...),
 			NewFilterer(f...),

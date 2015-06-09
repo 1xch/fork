@@ -8,16 +8,16 @@ import (
 
 type booleanfield struct {
 	Selection *Selection
-	*baseField
-	*processor
+	*named
+	Processor
 }
 
 func (b *booleanfield) New() Field {
 	var newfield booleanfield = *b
 	var newselection Selection = *b.Selection
-	newfield.baseField = b.baseField.Copy()
+	newfield.named = b.named.Copy()
 	newfield.Selection = &newselection
-	b.validateable = false
+	newfield.SetValidateable(false)
 	return &newfield
 }
 
@@ -32,7 +32,7 @@ func (b *booleanfield) Set(r *http.Request) {
 	} else {
 		b.Selection.Set = false
 	}
-	b.validateable = true
+	b.SetValidateable(true)
 }
 
 func toggleWidget(input string, options ...string) Widget {
@@ -49,8 +49,8 @@ func toggleWidget(input string, options ...string) Widget {
 func BooleanField(name string, label string, start bool, options ...string) Field {
 	return &booleanfield{
 		Selection: NewSelection(name, label, start),
-		baseField: newBaseField(name),
-		processor: NewProcessor(
+		named:     newnamed(name),
+		Processor: NewProcessor(
 			toggleWidget("checkbox", options...),
 			nilValidater,
 			nilFilterer,
@@ -61,8 +61,8 @@ func BooleanField(name string, label string, start bool, options ...string) Fiel
 func ToggleInput(name string, label string, value string, widget Widget, checked bool) Field {
 	return &booleanfield{
 		Selection: NewSelection(value, label, checked),
-		baseField: newBaseField(name),
-		processor: NewProcessor(
+		named:     newnamed(name),
+		Processor: NewProcessor(
 			widget,
 			nilValidater,
 			nilFilterer,

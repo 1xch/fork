@@ -9,7 +9,8 @@ type Checker interface {
 }
 
 type checker struct {
-	checks []reflect.Value
+	checked bool
+	checks  []reflect.Value
 }
 
 func NewChecker() Checker {
@@ -31,9 +32,11 @@ func (c *checker) Check(f Form) (bool, error) {
 	for _, fn := range c.checks {
 		valid, err = Check(fn, f)
 		if err != nil {
+			c.checked = true
 			return valid, err
 		}
 	}
+	c.checked = true
 	return valid, err
 }
 
@@ -45,7 +48,7 @@ func (c *checker) Checks(fns ...interface{}) []reflect.Value {
 }
 
 func (c *checker) AddCheck(fn interface{}) {
-	c.checks = append(c.checks, valueFn(fn, `must return 1 boolean and 1 error`))
+	c.checks = append(c.checks, valueFn(fn, isCheck, `must return 1 boolean and 1 error`))
 }
 
 var boolType = reflect.TypeOf((*bool)(nil)).Elem()
@@ -58,7 +61,7 @@ func isCheck(typ reflect.Type) bool {
 	return false
 }
 
-var BadCheck = ForkError(`[fork] check function did not return a boolean value with its error.`)
+var BadCheck = ForkError(`check function did not return a boolean value with its error.`)
 
 func Check(fn reflect.Value, args ...interface{}) (bool, error) {
 	checked, err := call(fn, args...)

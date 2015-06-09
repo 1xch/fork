@@ -6,24 +6,24 @@ import (
 	"net/mail"
 )
 
-func newtextField(b *baseField, w Widget, v Validater, f Filterer) Field {
+func newtextField(n *named, w Widget, v Validater, f Filterer) Field {
 	return &textField{
-		baseField: b,
-		processor: NewProcessor(w, v, f),
+		named:     n,
+		Processor: NewProcessor(w, v, f),
 	}
 }
 
 type textField struct {
 	Text string
-	*baseField
-	*processor
+	*named
+	Processor
 }
 
 func (t *textField) New() Field {
 	var newfield textField = *t
-	newfield.baseField = t.baseField.Copy()
+	newfield.named = t.named.Copy()
 	newfield.Text = ""
-	newfield.validateable = false
+	newfield.SetValidateable(false)
 	return &newfield
 }
 
@@ -34,7 +34,7 @@ func (t *textField) Get() *Value {
 func (t *textField) Set(r *http.Request) {
 	v := t.Filter(t.Name(), r)
 	t.Text = v.String()
-	t.validateable = true
+	t.SetValidateable(true)
 }
 
 func textWidget(options ...string) Widget {
@@ -43,7 +43,7 @@ func textWidget(options ...string) Widget {
 
 func TextField(name string, v []interface{}, f []interface{}, options ...string) Field {
 	return newtextField(
-		newBaseField(name),
+		newnamed(name),
 		textWidget(options...),
 		NewValidater(v...),
 		NewFilterer(f...),
@@ -56,7 +56,7 @@ func textAreaWidget(options ...string) Widget {
 
 func TextAreaField(name string, v []interface{}, f []interface{}, options ...string) Field {
 	return newtextField(
-		newBaseField(name),
+		newnamed(name),
 		textAreaWidget(options...),
 		NewValidater(v...),
 		NewFilterer(f...),
@@ -69,7 +69,7 @@ func hiddenWidget(options ...string) Widget {
 
 func HiddenField(name string, v []interface{}, f []interface{}, options ...string) Field {
 	return newtextField(
-		newBaseField(name),
+		newnamed(name),
 		hiddenWidget(options...),
 		NewValidater(v...),
 		NewFilterer(f...),
@@ -82,7 +82,7 @@ func passwordWidget(options ...string) Widget {
 
 func PassWordField(name string, v []interface{}, f []interface{}, options ...string) Field {
 	return newtextField(
-		newBaseField(name),
+		newnamed(name),
 		passwordWidget(options...),
 		NewValidater(v...),
 		NewFilterer(f...),
@@ -95,7 +95,7 @@ func emailWidget(options ...string) Widget {
 
 func EmailField(name string, v []interface{}, f []interface{}, options ...string) Field {
 	return newtextField(
-		newBaseField(name),
+		newnamed(name),
 		emailWidget(options...),
 		NewValidater(append(v, ValidEmail)...),
 		NewFilterer(f...),
@@ -103,7 +103,7 @@ func EmailField(name string, v []interface{}, f []interface{}, options ...string
 }
 
 func ValidEmail(t *textField) error {
-	if t.validateable {
+	if t.Validateable() {
 		_, err := mail.ParseAddress(t.Text)
 		if err != nil {
 			return fmt.Errorf("Invalid email address: %s", err.Error())

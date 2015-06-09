@@ -6,40 +6,34 @@ import (
 )
 
 type Field interface {
+	Named
 	New() Field
 	Get() *Value
 	Set(*http.Request)
-	BaseField
 	Processor
 }
 
-type BaseField interface {
+type Named interface {
 	Name(...string) string
-	Validateable() bool
 }
 
-func newBaseField(name string) *baseField {
-	return &baseField{name: name}
+func newnamed(name string) *named {
+	return &named{name: name}
 }
 
-type baseField struct {
-	name         string
-	validateable bool
+type named struct {
+	name string
 }
 
-func (b *baseField) Name(name ...string) string {
+func (n *named) Name(name ...string) string {
 	if len(name) > 0 {
-		b.name = strings.Join(name, "-")
+		n.name = strings.Join(name, "-")
 	}
-	return b.name
+	return n.name
 }
 
-func (b *baseField) Validateable() bool {
-	return b.validateable
-}
-
-func (b *baseField) Copy() *baseField {
-	var ret baseField = *b
+func (n *named) Copy() *named {
+	var ret named = *n
 	return &ret
 }
 

@@ -10,14 +10,14 @@ import (
 type listField struct {
 	base   Field
 	Fields []Field
-	*baseField
-	*processor
+	*named
+	Processor
 }
 
 func (l *listField) New() Field {
 	var newfield listField = *l
-	newfield.base = l.base.New()
-	newfield.validateable = false
+	newfield.named = l.named.Copy()
+	newfield.SetValidateable(false)
 	return &newfield
 }
 
@@ -41,7 +41,7 @@ func (lf *listField) Set(r *http.Request) {
 			lf.Fields = append(lf.Fields, nf)
 		}
 	}
-	lf.validateable = true
+	lf.SetValidateable(true)
 }
 
 func listFieldsWidget(options ...string) Widget {
@@ -68,10 +68,10 @@ func getregexp(name string) *regexp.Regexp {
 
 func ListField(name string, startwith int, starting Field, options ...string) Field {
 	return &listField{
-		base:      starting,
-		Fields:    renameFields(name, startwith, starting),
-		baseField: newBaseField(name),
-		processor: NewProcessor(
+		base:   starting,
+		Fields: renameFields(name, startwith, starting),
+		named:  newnamed(name),
+		Processor: NewProcessor(
 			listFieldsWidget(options...),
 			nilValidater,
 			nilFilterer,

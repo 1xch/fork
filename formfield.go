@@ -20,14 +20,14 @@ type formField struct {
 	base  Form
 	Index *FieldIndex
 	Forms []Form
-	*baseField
-	*processor
+	*named
+	Processor
 }
 
 func (f *formField) New() Field {
 	var newfield formField = *f
-	newfield.baseField = f.baseField.Copy()
-	newfield.validateable = false
+	newfield.named = f.named.Copy()
+	newfield.SetValidateable(false)
 	return &newfield
 }
 
@@ -45,7 +45,7 @@ func (f *formField) Set(r *http.Request) {
 		nf.Process(r)
 		f.Forms = append(f.Forms, nf)
 	}
-	f.validateable = true
+	f.SetValidateable(true)
 }
 
 func FilterIndex(index string) *FieldIndex {
@@ -94,11 +94,11 @@ func FormField(name string, f Form) Field {
 
 func FormsField(name string, startwith int, start Form) Field {
 	return &formField{
-		base:      start,
-		Index:     NewFieldIndex(strconv.Itoa(startwith), startwith),
-		Forms:     addForm(name, startwith, start),
-		baseField: newBaseField(name),
-		processor: NewProcessor(
+		base:  start,
+		Index: NewFieldIndex(strconv.Itoa(startwith), startwith),
+		Forms: addForm(name, startwith, start),
+		named: newnamed(name),
+		Processor: NewProcessor(
 			formFieldWidget(name),
 			NewValidater(ValidateIndex),
 			NewFilterer(FilterIndex),

@@ -18,15 +18,15 @@ func NewSelection(value string, label string, set bool) *Selection {
 
 type selectfield struct {
 	Selections []*Selection
-	*baseField
-	*processor
+	*named
+	Processor
 }
 
 func (s *selectfield) New() Field {
 	var newfield selectfield = *s
-	newfield.baseField = s.baseField.Copy()
+	newfield.named = s.named.Copy()
 	copy(newfield.Selections, s.Selections)
-	s.validateable = false
+	s.SetValidateable(false)
 	return &newfield
 }
 
@@ -47,7 +47,7 @@ func (s *selectfield) Set(req *http.Request) {
 	for _, v := range val {
 		setselection(v, s.Selections)
 	}
-	s.validateable = true
+	s.SetValidateable(true)
 }
 
 const selectbase = `<select name="{{ .Name }}" %s>{{ range $x := .Selections }}<option value="{{ $x.Value }}"{{ if $x.Set }} selected{{ end }}>{{ $x.Label}}</option>{{ end }}</select>`
@@ -59,8 +59,8 @@ func selectWidget(options ...string) Widget {
 func SelectField(name string, s []*Selection, v []interface{}, f []interface{}, options ...string) Field {
 	return &selectfield{
 		Selections: s,
-		baseField:  newBaseField(name),
-		processor: NewProcessor(
+		named:      newnamed(name),
+		Processor: NewProcessor(
 			selectWidget(options...),
 			NewValidater(v...),
 			NewFilterer(f...),
@@ -70,14 +70,14 @@ func SelectField(name string, s []*Selection, v []interface{}, f []interface{}, 
 
 type radiofield struct {
 	Selections []Field
-	*baseField
-	*processor
+	*named
+	Processor
 }
 
 func (r *radiofield) New() Field {
 	var newfield radiofield = *r
 	copy(newfield.Selections, r.Selections)
-	r.validateable = false
+	r.SetValidateable(false)
 	return &newfield
 }
 
@@ -89,7 +89,7 @@ func (r *radiofield) Set(req *http.Request) {
 	for _, s := range r.Selections {
 		s.Set(req)
 	}
-	r.validateable = true
+	r.SetValidateable(true)
 }
 
 func radioWidget(name string, legend string, options ...string) Widget {
@@ -113,8 +113,8 @@ func makeradioinputs(name string, selections []*Selection) []Field {
 func RadioField(name string, legend string, s []*Selection, v []interface{}, f []interface{}, options ...string) Field {
 	return &radiofield{
 		Selections: makeradioinputs(name, s),
-		baseField:  newBaseField(name),
-		processor: NewProcessor(
+		named:      newnamed(name),
+		Processor: NewProcessor(
 			radioWidget(name, legend, options...),
 			NewValidater(v...),
 			NewFilterer(f...),
