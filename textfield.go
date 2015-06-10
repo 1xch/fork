@@ -6,9 +6,9 @@ import (
 	"net/mail"
 )
 
-func newtextField(n *named, w Widget, v Validater, f Filterer) Field {
+func newtextField(name string, w Widget, v Validater, f Filterer) Field {
 	return &textField{
-		named:     n,
+		named:     newnamed(name),
 		Processor: NewProcessor(w, v, f),
 	}
 }
@@ -43,7 +43,7 @@ func textWidget(options ...string) Widget {
 
 func TextField(name string, v []interface{}, f []interface{}, options ...string) Field {
 	return newtextField(
-		newnamed(name),
+		name,
 		textWidget(options...),
 		NewValidater(v...),
 		NewFilterer(f...),
@@ -56,7 +56,7 @@ func textAreaWidget(options ...string) Widget {
 
 func TextAreaField(name string, v []interface{}, f []interface{}, options ...string) Field {
 	return newtextField(
-		newnamed(name),
+		name,
 		textAreaWidget(options...),
 		NewValidater(v...),
 		NewFilterer(f...),
@@ -69,7 +69,7 @@ func hiddenWidget(options ...string) Widget {
 
 func HiddenField(name string, v []interface{}, f []interface{}, options ...string) Field {
 	return newtextField(
-		newnamed(name),
+		name,
 		hiddenWidget(options...),
 		NewValidater(v...),
 		NewFilterer(f...),
@@ -82,7 +82,7 @@ func passwordWidget(options ...string) Widget {
 
 func PassWordField(name string, v []interface{}, f []interface{}, options ...string) Field {
 	return newtextField(
-		newnamed(name),
+		name,
 		passwordWidget(options...),
 		NewValidater(v...),
 		NewFilterer(f...),
@@ -95,7 +95,7 @@ func emailWidget(options ...string) Widget {
 
 func EmailField(name string, v []interface{}, f []interface{}, options ...string) Field {
 	return newtextField(
-		newnamed(name),
+		name,
 		emailWidget(options...),
 		NewValidater(append(v, ValidEmail)...),
 		NewFilterer(f...),

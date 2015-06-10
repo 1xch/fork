@@ -27,7 +27,7 @@ func (c *checker) Checkable() bool {
 
 func (c *checker) SetCheckable(b bool) bool {
 	c.checkable = b
-	return c.Checkable()
+	return c.checkable
 }
 
 func (c *checker) Check(f Form) (bool, error) {
@@ -47,6 +47,7 @@ func (c *checker) Check(f Form) (bool, error) {
 func (c *checker) Ok(f Form) bool {
 	for _, fd := range f.Fields() {
 		if !fd.Valid(fd) {
+			c.checkable = false
 			return false
 		}
 	}
@@ -55,22 +56,16 @@ func (c *checker) Ok(f Form) bool {
 }
 
 func (c *checker) Error(f Form) bool {
-	//if v. {
-	//	return !v.Valid(f)
-	//}
-	return false
+	return !c.Ok(f)
 }
 
 func (c *checker) Errors(f Form) []string {
 	var ret []string
-	//if v.validateable {
-	//	for _, vdr := range v.validaters {
-	//		err := Validate(vdr, f)
-	//		if err != nil {
-	//			ret = append(ret, err.Error())
-	//		}
-	//	}
-	//}
+	_, err := c.Check(f)
+	ret = append(ret, err.Error())
+	for _, fd := range f.Fields() {
+		ret = append(ret, fd.Errors(fd)...)
+	}
 	return ret
 }
 
@@ -86,8 +81,6 @@ func (c *checker) Checks(fns ...interface{}) []reflect.Value {
 	c.checks = reflectChecks(fns...)
 	return c.checks
 }
-
-var boolType = reflect.TypeOf((*bool)(nil)).Elem()
 
 func isCheck(typ reflect.Type) bool {
 	switch {

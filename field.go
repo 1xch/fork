@@ -55,9 +55,5 @@ type processor struct {
 }
 
 func NewProcessor(w Widget, v Validater, f Filterer) *processor {
-	return &processor{
-		Widget:    w,
-		Validater: v,
-		Filterer:  f,
-	}
+	return &processor{w, v, f}
 }

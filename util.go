@@ -42,6 +42,10 @@ func valueFn(fn interface{}, is func(reflect.Type) bool, out string) reflect.Val
 	return v
 }
 
+var errorType = reflect.TypeOf((*error)(nil)).Elem()
+
+var boolType = reflect.TypeOf((*bool)(nil)).Elem()
+
 func canBeNil(typ reflect.Type) bool {
 	switch typ.Kind() {
 	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Ptr, reflect.Slice:

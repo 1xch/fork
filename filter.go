@@ -45,8 +45,6 @@ func reflectFilters(fns ...interface{}) []reflect.Value {
 	return ret
 }
 
-var errorType = reflect.TypeOf((*error)(nil)).Elem()
-
 func isFilter(typ reflect.Type) bool {
 	switch {
 	case typ.NumOut() == 1:
