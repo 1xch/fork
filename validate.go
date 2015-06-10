@@ -3,62 +3,24 @@ package fork
 import "reflect"
 
 type Validater interface {
-	Error(Field) bool
-	Errors(Field) []string
-	Valid(Field) bool
-	Validate(Field) error
-	Validaters(...interface{}) []reflect.Value
 	Validateable() bool
 	SetValidateable(bool) bool
+	Validate(Field) error
+	Valid(Field) bool
+	Error(Field) bool
+	Errors(Field) []string
+	Validaters(...interface{}) []reflect.Value
 }
 
 var nilValidater = &validater{}
-
-func NewValidater(v ...interface{}) Validater {
-	return &validater{validaters: reflectValidaters(v...)}
-}
 
 type validater struct {
 	validateable bool
 	validaters   []reflect.Value
 }
 
-func (v *validater) Error(f Field) bool {
-	return !v.Valid(f)
-}
-
-func (v *validater) Errors(f Field) []string {
-	var ret []string
-	for _, vdr := range v.validaters {
-		err := Validate(vdr, f)
-		if err != nil {
-			ret = append(ret, err.Error())
-		}
-	}
-	return ret
-}
-
-func (v *validater) Valid(f Field) bool {
-	err := v.Validate(f)
-	if err != nil {
-		return false
-	}
-	return true
-}
-
-func (v *validater) Validate(f Field) error {
-	for _, vdr := range v.validaters {
-		err := Validate(vdr, f)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (v *validater) Validaters(fns ...interface{}) []reflect.Value {
-	v.validaters = append(v.validaters, reflectValidaters(fns...)...)
-	return v.validaters
+func NewValidater(v ...interface{}) Validater {
+	return &validater{validaters: reflectValidaters(v...)}
 }
 
 func (v *validater) Validateable() bool {
@@ -68,6 +30,55 @@ func (v *validater) Validateable() bool {
 func (v *validater) SetValidateable(b bool) bool {
 	v.validateable = b
 	return v.Validateable()
+}
+
+func (v *validater) Validate(f Field) error {
+	var err error
+	if v.validateable {
+		for _, vdr := range v.validaters {
+			err = Validate(vdr, f)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return err
+}
+
+func (v *validater) Valid(f Field) bool {
+	var valid = true
+	if v.validateable {
+		err := v.Validate(f)
+		if err != nil {
+			valid = false
+		}
+	}
+	return valid
+}
+
+func (v *validater) Error(f Field) bool {
+	if v.validateable {
+		return !v.Valid(f)
+	}
+	return false
+}
+
+func (v *validater) Errors(f Field) []string {
+	var ret []string
+	if v.validateable {
+		for _, vdr := range v.validaters {
+			err := Validate(vdr, f)
+			if err != nil {
+				ret = append(ret, err.Error())
+			}
+		}
+	}
+	return ret
+}
+
+func (v *validater) Validaters(fns ...interface{}) []reflect.Value {
+	v.validaters = append(v.validaters, reflectValidaters(fns...)...)
+	return v.validaters
 }
 
 func reflectValidaters(fns ...interface{}) []reflect.Value {

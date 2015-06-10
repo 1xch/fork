@@ -73,7 +73,7 @@ func formFieldWidget(name string) Widget {
 
 func renameFormFields(name string, number int, f Form) Form {
 	for index, field := range f.Fields() {
-		field.Name(name, strconv.Itoa(number), field.Name(), strconv.Itoa(index))
+		field.ReName(name, strconv.Itoa(number), field.Name(), strconv.Itoa(index))
 	}
 	return f
 }

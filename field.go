@@ -14,7 +14,8 @@ type Field interface {
 }
 
 type Named interface {
-	Name(...string) string
+	Name() string
+	ReName(...string) string
 }
 
 func newnamed(name string) *named {
@@ -25,9 +26,13 @@ type named struct {
 	name string
 }
 
-func (n *named) Name(name ...string) string {
-	if len(name) > 0 {
-		n.name = strings.Join(name, "-")
+func (n *named) Name() string {
+	return n.name
+}
+
+func (n *named) ReName(rename ...string) string {
+	if len(rename) > 0 {
+		n.name = strings.Join(rename, "-")
 	}
 	return n.name
 }

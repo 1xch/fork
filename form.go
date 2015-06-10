@@ -39,7 +39,6 @@ type Renderer interface {
 
 type Informer interface {
 	Values() map[string]*Value
-	Errors() []string
 }
 
 func Checks(cs ...interface{}) FormConfig {
@@ -139,12 +138,4 @@ func (f *form) Values() map[string]*Value {
 		f.mkvalues()
 	}
 	return f.values
-}
-
-func (f *form) Errors() []string {
-	var ret []string
-	for _, fd := range f.Fields() {
-		ret = append(ret, fd.Errors(fd)...)
-	}
-	return ret
 }

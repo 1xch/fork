@@ -49,7 +49,7 @@ func listFieldsWidget(options ...string) Widget {
 }
 
 func renameField(name string, number int, field Field) Field {
-	field.Name(name, strconv.Itoa(number), field.Name())
+	field.ReName(name, strconv.Itoa(number), field.Name())
 	return field
 }
 
