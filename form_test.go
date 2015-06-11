@@ -2,6 +2,7 @@ package fork
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -39,11 +40,25 @@ func PerformPost(th *TestHandler, values string) *httptest.ResponseRecorder {
 	return w
 }
 
-func PerformForForm(f Form, postdata string) (*httptest.ResponseRecorder, *httptest.ResponseRecorder) {
+func testCheck(t *testing.T) func(Form) (bool, error) {
+	return func(f Form) (bool, error) {
+		for _, fd := range f.Fields() {
+			if !fd.Valid(fd) {
+				t.Errorf("invalid field %+v in test check", fd)
+				return false, errors.New("invalid field")
+			}
+		}
+		return true, nil
+	}
+}
+
+func PerformForForm(t *testing.T, f Form, postdata string) (*httptest.ResponseRecorder, *httptest.ResponseRecorder) {
 	ts := testserve()
 
-	ts.handlers["GET"] = getformhandlerfor(f)
-	ts.handlers["POST"] = postformhandlerfor(f)
+	f.Checks(testCheck(t))
+
+	ts.handlers["GET"] = formHandlerGet(t, f)
+	ts.handlers["POST"] = formHandlerPost(t, f)
 
 	w1 := PerformGet(ts)
 	w2 := PerformPost(ts, postdata)
@@ -66,27 +81,37 @@ func testserve() *TestHandler {
 	return &TestHandler{handlers: make(map[string]http.HandlerFunc)}
 }
 
-func getformhandlerfor(f Form) func(w http.ResponseWriter, r *http.Request) {
+func formHandlerGet(t *testing.T, f Form) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
-		t := f.New()
-		out := formbuffer(`form via GET`, t)
+		nf := f.New()
+		if f.Tag() != nf.Tag() {
+			t.Errorf("provided form and new form tags are not the same: %s %s", f.Tag(), nf.Tag())
+		}
+		out := formbuffer(`form via GET`, nf)
 		w.Write(out.Bytes())
 	}
 }
 
-func postformhandlerfor(f Form) func(w http.ResponseWriter, r *http.Request) {
+func formHandlerPost(t *testing.T, f Form) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(200)
-		t := f.New()
-		t.Process(r)
-		out := formbuffer(`form via POST`, t)
-		w.Write(out.Bytes())
+		nf := f.New()
+		if ok, err := nf.Check(nf); ok && err == nil {
+			w.WriteHeader(200)
+			nf.Process(r)
+			if vals := nf.Values(); vals == nil {
+				t.Error("form.Values() did not return properly")
+			}
+			out := formbuffer(`form via POST`, nf)
+			w.Write(out.Bytes())
+		} else {
+			t.Errorf("form %+v is not ok and/or contains errors: %+v", nf, err)
+		}
 	}
 }
 
-func testbasic(t *testing.T, f Form, postprovides string, GETexpects string, POSTexpects string) {
-	w1, w2 := PerformForForm(f, postprovides)
+func testBasic(t *testing.T, f Form, postprovides string, GETexpects string, POSTexpects string) {
+	w1, w2 := PerformForForm(t, f, postprovides)
 
 	if w1.Code != 200 || w2.Code != 200 {
 		t.Errorf("Response incorrect; received Get %d Post %d, expected 200", w1.Code, w2.Code)
@@ -142,7 +167,7 @@ func TestValues(t *testing.T) {
 }
 
 func TestTextField(t *testing.T) {
-	testbasic(
+	testBasic(
 		t,
 		NewForm("TextField", Fields(TextField("text", nil, nil))),
 		`text=TEXT`,
@@ -152,7 +177,7 @@ func TestTextField(t *testing.T) {
 }
 
 func TestTextAreaField(t *testing.T) {
-	testbasic(
+	testBasic(
 		t,
 		NewForm("TextAreaField", Fields(TextAreaField("textarea", nil, nil, "rows=10", "cols=10"))),
 		`textarea=TEXTAREA`,
@@ -162,7 +187,7 @@ func TestTextAreaField(t *testing.T) {
 }
 
 func TestHiddenField(t *testing.T) {
-	testbasic(
+	testBasic(
 		t,
 		NewForm("HiddenField", Fields(HiddenField("hidden", nil, nil))),
 		`hidden=HIDDEN`,
@@ -172,7 +197,7 @@ func TestHiddenField(t *testing.T) {
 }
 
 func TestPasswordField(t *testing.T) {
-	testbasic(
+	testBasic(
 		t,
 		NewForm("PasswordField", Fields(PassWordField("password", nil, nil, "size=10", "maxlength=30"))),
 		`password=PASSWORD`,
@@ -182,14 +207,14 @@ func TestPasswordField(t *testing.T) {
 }
 
 func TestEmailField(t *testing.T) {
-	testbasic(
+	testBasic(
 		t,
 		NewForm("EmailField", Fields(EmailField("email", nil, nil))),
 		`email=test@test.com`,
 		`<input type="email" name="email" value="" >`,
 		`<input type="email" name="email" value="test@test.com" >`,
 	)
-	testbasic(
+	testBasic(
 		t,
 		NewForm("EmailField :: Error", Fields(EmailField("email", nil, nil))),
 		`email=invalidemail.com`,
@@ -199,7 +224,7 @@ func TestEmailField(t *testing.T) {
 }
 
 func TestBooleanField(t *testing.T) {
-	testbasic(
+	testBasic(
 		t,
 		NewForm("BooleanField", Fields(BooleanField("yes", "YES", true), BooleanField("no", "NO", false))),
 		`no=no`,
@@ -209,7 +234,7 @@ func TestBooleanField(t *testing.T) {
 }
 
 func TestRadioInput(t *testing.T) {
-	testbasic(
+	testBasic(
 		t,
 		NewForm("RadioInput", Fields(RadioInput("radio-up", "UP", "up", false), RadioInput("radio-down", "DOWN", "down", false))),
 		`radio-up=up`,
@@ -219,7 +244,7 @@ func TestRadioInput(t *testing.T) {
 }
 
 func TestCheckBoxInput(t *testing.T) {
-	testbasic(
+	testBasic(
 		t,
 		NewForm(
 			"CheckboxInput",
@@ -243,14 +268,14 @@ func makeselectoptions(so ...string) []*Selection {
 }
 
 func TestSelectField(t *testing.T) {
-	testbasic(
+	testBasic(
 		t,
 		NewForm("SelectField", Fields(SelectField("selectfield", makeselectoptions("one", "two", "three"), nil, nil))),
 		`selectfield=three`,
 		`<select name="selectfield" ><option value="one">ONE</option><option value="two">TWO</option><option value="three">THREE</option></select>`,
 		`<select name="selectfield" ><option value="one">ONE</option><option value="two">TWO</option><option value="three" selected>THREE</option></select>`,
 	)
-	testbasic(
+	testBasic(
 		t,
 		NewForm("MultiSelectField", Fields(SelectField("multiselectfield", makeselectoptions("one", "two", "three"), nil, nil, "multiple"))),
 		`multiselectfield=one two three`,
@@ -260,7 +285,7 @@ func TestSelectField(t *testing.T) {
 }
 
 func TestRadioField(t *testing.T) {
-	testbasic(
+	testBasic(
 		t,
 		NewForm("RadioField", Fields(RadioField("radiofield-group", "Select one:", makeselectoptions("A", "B", "C", "D"), nil, nil))),
 		`radiofield-group=A`,
@@ -270,14 +295,14 @@ func TestRadioField(t *testing.T) {
 }
 
 func TestDateField(t *testing.T) {
-	testbasic(
+	testBasic(
 		t,
 		NewForm("DateField", Fields(DateField("datefield"))),
 		`datefield=26/02/2015`,
 		`<input type="date" name="datefield" value="" >`,
 		`<input type="date" name="datefield" value="26/02/2015" >`,
 	)
-	testbasic(
+	testBasic(
 		t,
 		NewForm("DateField :: Error", Fields(DateField("datefield"))),
 		`datefield=26022015`,
@@ -288,7 +313,7 @@ func TestDateField(t *testing.T) {
 
 func TestListField(t *testing.T) {
 	var ListField1 Field = ListField("listfield", 3, TextField("TEST", nil, nil))
-	testbasic(
+	testBasic(
 		t,
 		NewForm("ListField", Fields(ListField1)),
 		`listfield-0-TEST=IamZERO&listfield-1-TEST=IamONE&listfield7-seven=IshouldnotbeSEVEN`,
@@ -304,7 +329,7 @@ func SimpleForm() Form {
 func TestFormsField(t *testing.T) {
 	var FormsField1 Field = FormsField("formfield", 1, SimpleForm())
 
-	testbasic(
+	testBasic(
 		t,
 		NewForm("FormsField", Fields(FormsField1)),
 		`formfield=2&formfield-0-fftext-0=TEXTFIELD0&formfield-0-yes-1=yes&formfield-1-fftext-0=TEXTFIELD1`,
@@ -332,8 +357,8 @@ func TestXSRF(t *testing.T) {
 	f := NewForm("XSRF", Fields(field))
 
 	ts := testserve()
-	ts.handlers["GET"] = getformhandlerfor(f)
-	ts.handlers["POST"] = postformhandlerfor(f)
+	ts.handlers["GET"] = formHandlerGet(t, f)
+	ts.handlers["POST"] = formHandlerPost(t, f)
 
 	w1 := PerformGet(ts)
 
@@ -375,7 +400,7 @@ func TestXSRF(t *testing.T) {
 }
 
 func TestSubmitField(t *testing.T) {
-	testbasic(
+	testBasic(
 		t,
 		NewForm("SubmitField", Fields(SubmitField("test", nil, nil))),
 		``,

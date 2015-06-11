@@ -1,5 +1,14 @@
 ##Changelog
 
+### Fork 0.0.3 (??.6.2015)
+
+- submit field
+- refactored form redering
+- access to form values as a map
+- form level checks to evaluate multiple fields or the form as a whole
+- improved errors
+- cleanup & refactoring
+
 ### Fork 0.0.2 (6.3.2015)
 
 - simple csrf protection field

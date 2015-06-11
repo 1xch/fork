@@ -26,10 +26,7 @@ func (fr *filterer) Filter(k string, r *http.Request) *Value {
 	for _, fn := range fr.filters {
 		v = Filter(fn, v)
 	}
-	if v != nil {
-		return NewValue(v)
-	}
-	return NewValue(nil)
+	return NewValue(v)
 }
 
 func (fr *filterer) Filters(fns ...interface{}) []reflect.Value {
