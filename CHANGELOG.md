@@ -1,9 +1,9 @@
 ##Changelog
 
-### Fork 0.0.3 (??.6.2015)
+### Fork 0.0.3 (11.6.2015)
 
 - submit field
-- refactored form redering
+- refactored form rendering
 - access to form values as a map
 - form level checks to evaluate multiple fields or the form as a whole
 - improved errors

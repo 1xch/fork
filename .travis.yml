@@ -11,4 +11,4 @@ before_install:
 - go get golang.org/x/tools/cmd/cover
 
 script:
-- $HOME/gopath/bin/goveralls -repotoken vMwNMJDvRoqvrHy7LgyvP9Ov403PnivLy
+- $HOME/gopath/bin/goveralls -repotoken 7VO3lEVIAiJmZqlon8kjHuTvI2PN1BiMK
