@@ -1,5 +1,11 @@
 ##Changelog
 
+
+### Fork 0.0.4 (3.8.2015)
+
+- passing parameters through field.New
+- cleanup & refactoring 
+
 ### Fork 0.0.3 (11.6.2015)
 
 - submit field

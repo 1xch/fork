@@ -7,7 +7,7 @@ import (
 
 type Field interface {
 	Named
-	New() Field
+	New(...interface{}) Field
 	Get() *Value
 	Set(*http.Request)
 	Processor

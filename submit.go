@@ -8,7 +8,7 @@ type submitField struct {
 	Processor
 }
 
-func (s *submitField) New() Field {
+func (s *submitField) New(i ...interface{}) Field {
 	var newfield submitField = *s
 	newfield.named = s.named.Copy()
 	newfield.Submitted = false

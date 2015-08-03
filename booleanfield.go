@@ -12,7 +12,7 @@ type booleanfield struct {
 	Processor
 }
 
-func (b *booleanfield) New() Field {
+func (b *booleanfield) New(i ...interface{}) Field {
 	var newfield booleanfield = *b
 	var newselection Selection = *b.Selection
 	newfield.named = b.named.Copy()
