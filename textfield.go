@@ -19,7 +19,7 @@ type textField struct {
 	Processor
 }
 
-func (t *textField) New() Field {
+func (t *textField) New(i ...interface{}) Field {
 	var newfield textField = *t
 	newfield.named = t.named.Copy()
 	newfield.Text = ""

@@ -24,7 +24,7 @@ type formField struct {
 	Processor
 }
 
-func (f *formField) New() Field {
+func (f *formField) New(i ...interface{}) Field {
 	var newfield formField = *f
 	newfield.named = f.named.Copy()
 	newfield.SetValidateable(false)

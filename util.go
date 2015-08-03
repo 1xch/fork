@@ -23,21 +23,21 @@ func ForkError(err string) *forkError {
 	return &forkError{err: err}
 }
 
-var NotAFunction = ForkError(`#+v is not a function`)
+var NotAFunction = ForkError(`#+v is not a function`).Out
 
-var InvalidFunction = ForkError(`cannot use function %q with %d results, return must be %s`)
+var InvalidFunction = ForkError(`cannot use function %q with %d results, return must be %s`).Out
 
-var WrongNumberArgs = ForkError(`wrong number of args: got %d want at least %d`)
+var WrongNumberArgs = ForkError(`wrong number of args: got %d want at least %d`).Out
 
-var UnassignableArg = ForkError(`arg %d has type %s; should be %s`)
+var UnassignableArg = ForkError(`arg %d has type %s; should be %s`).Out
 
 func valueFn(fn interface{}, is func(reflect.Type) bool, out string) reflect.Value {
 	v := reflect.ValueOf(fn)
 	if !is(v.Type()) {
-		panic(InvalidFunction.Out(fn, v.Type().NumOut(), out).Error())
+		panic(InvalidFunction(fn, v.Type().NumOut(), out).Error())
 	}
 	if v.Kind() != reflect.Func {
-		panic(NotAFunction.Out(fn).Error())
+		panic(NotAFunction(fn).Error())
 	}
 	return v
 }
@@ -60,12 +60,12 @@ func call(fn reflect.Value, args ...interface{}) (interface{}, error) {
 	var dddType reflect.Type
 	if typ.IsVariadic() {
 		if len(args) < numIn-1 {
-			return nil, WrongNumberArgs.Out(len(args), numIn-1)
+			return nil, WrongNumberArgs(len(args), numIn-1)
 		}
 		dddType = typ.In(numIn - 1).Elem()
 	} else {
 		if len(args) != numIn {
-			return nil, WrongNumberArgs.Out(len(args), numIn)
+			return nil, WrongNumberArgs(len(args), numIn)
 		}
 	}
 	argv := make([]reflect.Value, len(args))
@@ -81,7 +81,7 @@ func call(fn reflect.Value, args ...interface{}) (interface{}, error) {
 			value = reflect.Zero(argType)
 		}
 		if !value.Type().AssignableTo(argType) {
-			return nil, UnassignableArg.Out(i, value.Type(), argType)
+			return nil, UnassignableArg(i, value.Type(), argType)
 		}
 		argv[i] = value
 	}
