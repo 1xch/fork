@@ -90,7 +90,7 @@ func isCheck(typ reflect.Type) bool {
 	return false
 }
 
-var BadCheck = ForkError(`check function did not return a boolean value with its error.`)
+var BadCheck = Frror(`check function did not return a boolean value with its error.`)
 
 func Check(fn reflect.Value, args ...interface{}) (bool, error) {
 	checked, err := call(fn, args...)

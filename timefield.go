@@ -1,13 +1,8 @@
 package fork
 
 import (
-	"fmt"
 	"net/http"
 	"time"
-)
-
-const (
-	dateFormat = "02/01/2006"
 )
 
 type timeField struct {
@@ -57,15 +52,19 @@ func NewFilterTime(format string) func(string) string {
 	}
 }
 
+var UnparseableTime = Frror("Cannot parse %s in format %s").Out
+
 func ValidateTime(t *timeField) error {
 	if t.Validateable() {
 		_, err := time.Parse(t.format, t.Data)
 		if err != nil {
-			return fmt.Errorf("Cannot parse %s in format %s", t.Data, t.format)
+			return UnparseableTime(t.Data, t.format)
 		}
 	}
 	return nil
 }
+
+const dateFormat = "02/01/2006"
 
 func dateWidget(options ...string) Widget {
 	return NewWidget(WithOptions(`<input type="date" name="{{ .Name }}" value="{{ .Data }}" %s>`, options...))

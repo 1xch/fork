@@ -1,35 +1,14 @@
 package fork
 
-import (
-	"fmt"
-	"reflect"
-)
+import "reflect"
 
-type forkError struct {
-	err  string
-	vals []interface{}
-}
+var NotAFunction = Frror(`#+v is not a function`).Out
 
-func (f *forkError) Error() string {
-	return fmt.Sprintf("[fork] %s", fmt.Sprintf(f.err, f.vals...))
-}
+var InvalidFunction = Frror(`cannot use function %q with %d results, return must be %s`).Out
 
-func (f *forkError) Out(vals ...interface{}) *forkError {
-	f.vals = vals
-	return f
-}
+var WrongNumberArgs = Frror(`wrong number of args: got %d want at least %d`).Out
 
-func ForkError(err string) *forkError {
-	return &forkError{err: err}
-}
-
-var NotAFunction = ForkError(`#+v is not a function`).Out
-
-var InvalidFunction = ForkError(`cannot use function %q with %d results, return must be %s`).Out
-
-var WrongNumberArgs = ForkError(`wrong number of args: got %d want at least %d`).Out
-
-var UnassignableArg = ForkError(`arg %d has type %s; should be %s`).Out
+var UnassignableArg = Frror(`arg %d has type %s; should be %s`).Out
 
 func valueFn(fn interface{}, is func(reflect.Type) bool, out string) reflect.Value {
 	v := reflect.ValueOf(fn)

@@ -1,7 +1,6 @@
 package fork
 
 import (
-	"fmt"
 	"net/http"
 	"net/mail"
 )
@@ -102,11 +101,13 @@ func EmailField(name string, v []interface{}, f []interface{}, options ...string
 	)
 }
 
+var InvalidEmailAddress = Frror("Invalid email address: %s").Out
+
 func ValidEmail(t *textField) error {
 	if t.Validateable() {
 		_, err := mail.ParseAddress(t.Text)
 		if err != nil {
-			return fmt.Errorf("Invalid email address: %s", err.Error())
+			return InvalidEmailAddress(err.Error())
 		}
 	}
 	return nil
