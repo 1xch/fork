@@ -1,5 +1,11 @@
 ##Changelog
 
+### Fork 1.0.0 (1.12.2015)
+
+- designated 1.0.0 version increment
+- cleanup & refactoring
+- web page initialization
+
 ### Fork 0.0.4 (3.8.2015)
 
 - passing parameters through field.New
