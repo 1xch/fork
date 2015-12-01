@@ -2,17 +2,17 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Field on Fork</title>
-    <link>http://localhost:1313/fork/tags/field/</link>
+    <link>http://thrisp.github.io/fork/tags/field/</link>
     <description>Recent content in Field on Fork</description>
     <generator>Hugo -- gohugo.io</generator>
-    <atom:link href="http://localhost:1313/fork/tags/field/index.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="http://thrisp.github.io/fork/tags/field/index.xml" rel="self" type="application/rss+xml" />
     
     <item>
       <title>Fields</title>
-      <link>http://localhost:1313/fork/post/field/</link>
+      <link>http://thrisp.github.io/fork/post/field/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>http://localhost:1313/fork/post/field/</guid>
+      <guid>http://thrisp.github.io/fork/post/field/</guid>
       <description>&lt;p&gt;Forms are composed of individually constructed Fields.&lt;/p&gt;
 </description>
     </item>
