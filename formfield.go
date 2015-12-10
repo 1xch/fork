@@ -24,7 +24,7 @@ type formField struct {
 	Processor
 }
 
-func (f *formField) New(i ...interface{}) Field {
+func (f *formField) New(fc ...FieldConfig) Field {
 	var newfield formField = *f
 	newfield.named = f.named.Copy()
 	newfield.SetValidateable(false)
@@ -86,10 +86,6 @@ func addForm(name string, number int, form Form) []Form {
 
 	}
 	return ret
-}
-
-func FormField(name string, f Form) Field {
-	return FormsField(name, 1, f)
 }
 
 func FormsField(name string, startwith int, start Form) Field {

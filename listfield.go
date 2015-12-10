@@ -14,7 +14,7 @@ type listField struct {
 	Processor
 }
 
-func (l *listField) New(i ...interface{}) Field {
+func (l *listField) New(fc ...FieldConfig) Field {
 	var newfield listField = *l
 	newfield.named = l.named.Copy()
 	newfield.SetValidateable(false)

@@ -12,7 +12,7 @@ type timeField struct {
 	Processor
 }
 
-func (t *timeField) New(i ...interface{}) Field {
+func (t *timeField) New(fc ...FieldConfig) Field {
 	var newfield timeField = *t
 	newfield.named = t.named.Copy()
 	newfield.Data = ""

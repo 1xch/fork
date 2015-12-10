@@ -22,7 +22,7 @@ type xsrf struct {
 	Processor
 }
 
-func (x *xsrf) New(i ...interface{}) Field {
+func (x *xsrf) New(fc ...FieldConfig) Field {
 	var newfield xsrf = *x
 	newfield.named = x.named.Copy()
 	newfield.current = ""

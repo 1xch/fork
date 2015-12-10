@@ -22,7 +22,7 @@ type selectfield struct {
 	Processor
 }
 
-func (s *selectfield) New(i ...interface{}) Field {
+func (s *selectfield) New(fc ...FieldConfig) Field {
 	var newfield selectfield = *s
 	newfield.named = s.named.Copy()
 	copy(newfield.Selections, s.Selections)
@@ -74,7 +74,7 @@ type radiofield struct {
 	Processor
 }
 
-func (r *radiofield) New(i ...interface{}) Field {
+func (r *radiofield) New(i ...FieldConfig) Field {
 	var newfield radiofield = *r
 	copy(newfield.Selections, r.Selections)
 	r.SetValidateable(false)

@@ -5,9 +5,11 @@ import (
 	"strings"
 )
 
+type FieldConfig func(Field) error
+
 type Field interface {
 	Named
-	New(...interface{}) Field
+	New(...FieldConfig) Field
 	Get() *Value
 	Set(*http.Request)
 	Processor

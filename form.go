@@ -110,7 +110,7 @@ func (f *form) Process(r *http.Request) {
 func (f *form) Buffer() *bytes.Buffer {
 	b := new(bytes.Buffer)
 	for _, fd := range f.Fields() {
-		fb, err := fd.Bytes(fd)
+		fb, err := fd.ToBytes(fd)
 		if err == nil {
 			b.ReadFrom(fb)
 		}

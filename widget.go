@@ -8,10 +8,9 @@ import (
 )
 
 type Widget interface {
-	Bytes(interface{}) (*bytes.Buffer, error)
-	String(interface{}) string
+	ToBytes(interface{}) (*bytes.Buffer, error)
+	ToString(interface{}) string
 	Render(Field) template.HTML
-	RenderWith(map[string]interface{}) template.HTML
 }
 
 var defaultTemplate = strings.Join([]string{
@@ -45,27 +44,23 @@ type widget struct {
 	widget *template.Template
 }
 
-func (w *widget) Bytes(i interface{}) (*bytes.Buffer, error) {
+func (w *widget) ToBytes(i interface{}) (*bytes.Buffer, error) {
 	var buffer bytes.Buffer
 	err := w.widget.ExecuteTemplate(&buffer, w.name, i)
 	if err != nil {
-		return &buffer, err
+		return nil, err
 	}
 	return &buffer, nil
 }
 
-func (w *widget) String(i interface{}) string {
-	b, err := w.Bytes(i)
-	if err == nil {
-		return b.String()
+func (w *widget) ToString(i interface{}) string {
+	b, err := w.ToBytes(i)
+	if err != nil {
+		return err.Error()
 	}
-	return err.Error()
+	return b.String()
 }
 
 func (w *widget) Render(f Field) template.HTML {
-	return template.HTML(w.String(f))
-}
-
-func (w *widget) RenderWith(m map[string]interface{}) template.HTML {
-	return template.HTML(w.String(m))
+	return template.HTML(w.ToString(f))
 }
